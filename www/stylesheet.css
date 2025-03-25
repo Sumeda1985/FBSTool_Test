@@ -1,0 +1,21 @@
+.settings_row {
+
+}
+
+.settings_row .form-group > div {
+	float:left;
+	width: 130px;
+}
+
+.settings_row .selectize-input {
+	padding-left: 6px;
+	padding-right: 6px;
+	padding-top: 0px;
+	padding-bottom: 0px;
+	min-height: 0px;
+}
+
+.settings_row .control-label {
+	float:left;
+	margin-right: 0.5em;
+}
