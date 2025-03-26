@@ -445,6 +445,13 @@ observeEvent(input$saveCrop,{
   data_to_save <- copy(value$data_crop)
   data_to_save[,hidden := NULL]
   data_to_save <- subset(data_to_save, ElementCode %in% c("5510", "5312","5025"))
+  
+  
+  invalidateLater(2000)
+  if(rv$active_sessions[1] != session$token){
+    shinyalert(text = "Data is saved by another User. Please save your current work and Refresh", type = "warning")
+ } 
+  
   save_to_database(data = data_to_save,year_range = c(input$fromyear:input$endyear),session,input,output)
  })
 

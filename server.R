@@ -7,9 +7,18 @@ options(shiny.maxRequestSize=30*1024^2)
 reactive({
 updateSelectInput(session, input$countrym49, c(country_selc)) 
 })
+########
+isolate(rv$active_sessions <- c(rv$active_sessions, session$token))
+output$time <- renderText(rv$current_time)
+
+onSessionEnded(fun = function(){
+  isolate(rv$active_sessions <- setdiff(rv$active_sessions, session$token))
+})
+
 #reactive value for database 
 value_database <<- reactiveValues(data =NULL)
 
+######################3
 data_base <- observe({
   #reading country data
   countryData <- data.table(dbReadTable(con, "dbcountry"))
@@ -28,10 +37,7 @@ data_base <- observe({
   
 })
 
-
-
 #crop reactive values   
-  
 value <<- reactiveValues(data_crop =NULL)
 df_cropCountry <<- reactiveValues(data_cropCountry =NULL)
 valuesxxx <<-  reactiveValues(test = 'initial')
@@ -41,25 +47,19 @@ observeEvent(input$cropInsert,  {valuesxxx$test = 'add'})
 value <<- reactiveValues(countrym49 =NULL)
   
 #livestock reactive values   
-  
 value <<- reactiveValues(data_livestock =NULL)
 df_livestockCountry <<- reactiveValues(data_livestockCountry =NULL)
 valuesxxx <<-  reactiveValues(livestock_button = 'initial')
   # observeEvent(input$livestockInsert,  {valuesxxx$livestock_button = 'add'})
-  
-  
- 
 #domain scripts 
 crop_production <- crop_production(input,output,session)
 livestock_production <- livestock_production(input,output,session)
 
- 
 observeEvent(input$startContinue,{
   newtab <- switch(input$fao,"Start" = "production")
   updateTabItems(session, "fao", newtab)
 })
-  
-  
+
 observeEvent(input$fromyear,{
 if (input$fromyear != "" & nchar(input$fromyear) == 4){
     if(input$fromyear <= 2013){
@@ -74,8 +74,7 @@ if (input$fromyear != "" & nchar(input$fromyear) == 4){
   }
 })
   
-  
-observeEvent(input$endyear,{
+  observeEvent(input$endyear,{
 if (input$endyear != "" & nchar(input$endyear) == 4){
   if(input$endyear <= 2013){
       sendSweetAlert(
@@ -87,7 +86,6 @@ if (input$endyear != "" & nchar(input$endyear) == 4){
     }
   }
 })
-
 
 observeEvent(c(input$fromyear, input$endyear),{
 if (input$fromyear != "" & nchar(input$fromyear) == 4 & nchar(input$endyear) == 4 ){
@@ -103,9 +101,7 @@ if (input$fromyear != "" & nchar(input$fromyear) == 4 & nchar(input$endyear) == 
   }
 })
 
-
 saveMessages(input, output, session, buttons= c("saveCrop", "saveLivestock"))
-
 session$onSessionEnded(function() {
   # # 
   # # session$reload()

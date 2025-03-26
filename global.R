@@ -13,6 +13,9 @@ colorizeCell <- function(i, j,id){
   sprintf("colorizeCell(%d, %d, %s)", i, j, id)
 }
 
+
+rv <- reactiveValues()
+
 #create connection for SQL database
 con <- dbConnect(SQLite(), "Data\\Permanent.db")
 
