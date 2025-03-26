@@ -87,7 +87,7 @@ output$viewCrop= renderDataTable({
   ##Requested by China to add 01421 anf 01422 to the crop list.
   cpc2keep <- c(cpc2keep, c("01421","01422"))
   non_triplet=subset(non_triplet, CPCCode %in% cpc2keep)
-  fbscodes=fread("SUA-FBS Balancing/Data/fbsTree.csv")
+  fbscodes=fread("Data/fbsTree.csv")
   fbscodes=c(unique(fbscodes$id1),unique(fbscodes$id2),unique(fbscodes$id3),unique(fbscodes$id4))
   non_triplet=subset(non_triplet, !(CPCCode %in% fbscodes))
   croplistTool=rbind(triplet,non_triplet)
@@ -161,7 +161,7 @@ if (length(s) == 0){
     cpc2keep= unique(classification$CPCCode)
     cpc2keep <- c(cpc2keep,c("01421","01422"))
     non_triplet=subset(non_triplet, CPCCode %in% cpc2keep)
-    fbscodes=fread("SUA-FBS Balancing/Data/fbsTree.csv")
+    fbscodes=fread("Data/fbsTree.csv")
     fbscodes=c(unique(fbscodes$id1),unique(fbscodes$id2),unique(fbscodes$id3),unique(fbscodes$id4))
     non_triplet=subset(non_triplet, !(CPCCode %in% fbscodes))
     croplistTool=rbind(triplet,non_triplet)

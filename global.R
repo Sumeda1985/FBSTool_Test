@@ -1,4 +1,6 @@
 #Source functions
+library(RSQLite)
+library(DBI)
 
 css <- HTML(
   "table.dataTable tr.selected td.yellow {
@@ -17,7 +19,7 @@ colorizeCell <- function(i, j,id){
 rv <- reactiveValues()
 
 #create connection for SQL database
-con <- dbConnect(SQLite(), "Data\\Permanent.db")
+con <- DBI::dbConnect(SQLite(), "Data/Permanent.db")
 
 sapply(list.files(pattern="[.]R$", path="R/", full.names=TRUE), source)
 tourist_activate =TRUE

@@ -25,7 +25,7 @@ save_to_database <- function(data ,year_range,session,input,output){
  new_data <- merge(new_data,all_elements_to_merge, by = "ElementCode", all.x = TRUE)
  setcolorder(new_data, c("CountryM49","Country","CPCCode", "Commodity","ElementCode","Element","Year","Value","Flag"))
  new_data[, Flag := ifelse(!is.na(Value) & is.na(Flag), "", Flag)]
-    
+ showNotification("Trying to write to sqlite")    
  #SQL database 
    dbWriteTable(con, "dbcountry", new_data,overwrite = TRUE)
    value_database$data <<- new_data

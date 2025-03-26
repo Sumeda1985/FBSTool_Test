@@ -10,11 +10,11 @@ packageRequirevInstall = function(){
                     "xtable","shinyFiles", "readxl", "stringr","dplyr","reshape2","readr","openxlsx","shinydashboard","DT","imputeTS", "shinyBS",
                    "igraph","zoo","shinyjs", "shinybusy","V8","reshape","shinythemes", "shinyWidgets", "plotly", "MASS", "lattice","tidyr","RSQLite")
   
- if (length(setdiff(packagesCran, rownames(installed.packages()))) > 0) {
+# if (length(setdiff(packagesCran, rownames(installed.packages()))) > 0) {
     
-install.packages(setdiff(packagesCran, rownames(installed.packages()))) 
+#install.packages(setdiff(packagesCran, rownames(installed.packages()))) 
     
-  }
+#  }
   lapply(packagesCran, require, character.only = T)
   
 }

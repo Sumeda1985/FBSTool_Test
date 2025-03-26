@@ -70,7 +70,7 @@ output$viewLivestock= renderDataTable({
   classification_livestock  <- classification[classification %in% c("L", "LD", "LP")]
   cpc2keep= unique(classification_livestock$CPCCode)
   non_triplet=subset(non_triplet, CPCCode %in% cpc2keep)
-  fbscodes=fread("SUA-FBS Balancing/Data/fbsTree.csv")
+  fbscodes=fread("Data/fbsTree.csv")
   fbscodes=c(unique(fbscodes$id1),unique(fbscodes$id2),unique(fbscodes$id3),unique(fbscodes$id4))
   non_triplet=subset(non_triplet, !(CPCCode %in% fbscodes))
   livestocklistTool=rbind(triplet,non_triplet)
@@ -129,7 +129,7 @@ observeEvent(input$LivestockInsert, {
     classification_livestock=classification[classification %in% c("L", "LD", "LP")]
     cpc2keep= unique(classification_livestock$CPCCode)
     non_triplet=subset(non_triplet, CPCCode %in% cpc2keep)
-    fbscodes=fread("SUA-FBS Balancing/Data/fbsTree.csv")
+    fbscodes=fread("Data/fbsTree.csv")
     fbscodes=c(unique(fbscodes$id1),unique(fbscodes$id2),unique(fbscodes$id3),unique(fbscodes$id4))
     non_triplet=subset(non_triplet, !(CPCCode %in% fbscodes))
     livestocklistTool=rbind(triplet,non_triplet)
