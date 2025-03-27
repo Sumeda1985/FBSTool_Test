@@ -1,6 +1,5 @@
 
 save_to_database <- function(data ,year_range,session,input,output){
-    # browser()
     country_code  <- countrycode(input$countrym49, origin = 'country.name', destination = 'un')
     country  <- input$countrym49
     element <- unique(data$ElementCode)
@@ -20,18 +19,24 @@ save_to_database <- function(data ,year_range,session,input,output){
                      by=c("CountryM49","CPCCode","ElementCode","Year"), all = TRUE)
     old_data <- new_data[Value.y!=Value.x|Flag.y!=Flag.x,
                           .(CountryM49,
-                            CPCCode, ElementCode, Year,
+                            CPCCode,
+                            ElementCode, 
+                            Year,
                             StatusFlag=0,
                             LastModified,
                             Value=Value.x,
                             Flag=Flag.x)]
     new_data <- new_data[Value.y!=Value.x|Flag.y!=Flag.x,
-                        .( CountryM49,
+                        .(CountryM49,
                           CPCCode, ElementCode, Year,
                           StatusFlag=1,
                           LastModified=as.numeric(Sys.time()),
                           Value=Value.y,
                           Flag=Flag.y)]
+    old_data <- merge(old_data, all_cpc, by = "CPCCode", all.x=TRUE)
+    new_data <- merge(new_data, all_cpc, by = "CPCCode", all.x=TRUE)
+    old_data <- merge(old_data, all_elements, by = "ElementCode", all.x=TRUE)
+    new_data <- merge(new_data, all_elements, by = "ElementCode", all.x=TRUE)
     rows_update(contbl, as_tibble(old_data), ##if here needs Commodity , Country and Element columns to use row_update, 
                 #then new_data has to be merged with all_cpc all_elements and create new column with "Country := country"
                 by = c("CountryM49",
