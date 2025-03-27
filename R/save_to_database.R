@@ -1,6 +1,6 @@
 
 save_to_database <- function(data ,year_range,session,input,output){
-    browser()
+    # browser()
     country_code  <- countrycode(input$countrym49, origin = 'country.name', destination = 'un')
     country  <- input$countrym49
     element <- unique(data$ElementCode)
