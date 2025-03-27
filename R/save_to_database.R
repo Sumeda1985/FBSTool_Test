@@ -1,9 +1,8 @@
 
 save_to_database <- function(data ,year_range,session,input,output){
     #browser()
-    country_code  <- unique(value_database$data$CountryM49)
-    print(country_code)
-    country  <- unique(value_database$data$Country)
+    country_code  <- countrycode(input$countrym49, origin = 'country.name', destination = 'un')
+    country  <- input$countrym49
     element <- unique(data$ElementCode)
     cpc <- unique(data$CPCCode)
     data <- long_format(data)

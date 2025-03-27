@@ -73,4 +73,4 @@ set_hot_colwidths <- function(data) {
 
 ### countrym49 selection
 countries <- data.table(read_excel("Data/Reference File.xlsx", sheet = "Country"))
-country_selc <- paste0(countries$CountryM49 , "|" , countries$Country)
+country_selc <- unique(countries[,Country])
