@@ -1,6 +1,6 @@
 
 save_to_database <- function(data ,year_range,session,input,output){
-    #browser()
+    browser()
     country_code  <- countrycode(input$countrym49, origin = 'country.name', destination = 'un')
     country  <- input$countrym49
     element <- unique(data$ElementCode)
@@ -45,21 +45,4 @@ save_to_database <- function(data ,year_range,session,input,output){
                        , "Year", "Value", "Flag",
                        "LastModified"),
                 in_place=TRUE, copy = TRUE, conflict = "ignore")
-    
-    new_data[,`:=`(Value.x=NULL,
-                   Flag.x=N)]
-    new_data[, Value.x := ifelse(ElementCode %in% element & Year %in% year_range & CPCCode %in% cpc, Value.y,Value.x)]
-    new_data[, Flag.x := ifelse(ElementCode %in% element & Year %in% year_range & CPCCode %in% cpc, Flag.y,Flag.x)]
-    new_data[,c("Value.y","Flag.y") := NULL]
-    setnames(new_data, c("Value.x","Flag.x"),c("Value","Flag"))
-    new_data[, CountryM49 := country_code]
-    new_data[, Country := country]
-    new_data <- merge(new_data,all_cpc, by = "CPCCode", all.x = TRUE)
-    new_data <- merge(new_data,all_elements_to_merge, by = "ElementCode", all.x = TRUE)
-    setcolorder(new_data, c("CountryM49","Country","CPCCode", "Commodity","ElementCode","Element","Year","Value","Flag"))
-    new_data[, Flag := ifelse(!is.na(Value) & is.na(Flag), "", Flag)]
-   
-   
-
-
 }
