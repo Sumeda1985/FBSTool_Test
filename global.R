@@ -20,6 +20,7 @@ rv <- reactiveValues()
 
 #create connection for SQL database
 con <- DBI::dbConnect(SQLite(), "Data/Permanent.db")
+contbl <- tbl(con,"dbcountry")
 
 sapply(list.files(pattern="[.]R$", path="R/", full.names=TRUE), source)
 tourist_activate =TRUE

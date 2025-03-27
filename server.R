@@ -1,11 +1,11 @@
 
 shinyServer(function(input, output, session) {
-  
-  
-options(shiny.maxRequestSize=30*1024^2) 
-  
+
+
+options(shiny.maxRequestSize=30*1024^2)
+
 reactive({
-updateSelectInput(session, input$countrym49, c(country_selc)) 
+updateSelectInput(session, input$countrym49, c(country_selc))
 })
 ########
 isolate(rv$active_sessions <- c(rv$active_sessions, session$token))
@@ -15,14 +15,17 @@ onSessionEnded(fun = function(){
   isolate(rv$active_sessions <- setdiff(rv$active_sessions, session$token))
 })
 
-#reactive value for database 
+#reactive value for database
 value_database <<- reactiveValues(data =NULL)
 
 ######################3
 data_base <- observe({
   #reading country data
-  countryData <- data.table(dbReadTable(con, "dbcountry"))
-  countryData[, Value := as.numeric(Value)] 
+  countryData <- data.table(dbReadTable(con, "dbcountry"))[StatusFlag==1]
+  ## countryData[, StatusFlag:=1]
+  ## countryData[, LastModified:=as.numeric(Sys.time())]
+  ## dbWriteTable(con, "dbcountry", countryData, overwrite=TRUE)
+  countryData[, Value := as.numeric(Value)]
   countryData[, Flag := as.character(Flag)]
   # As per requested, live animals must be eliminated. Codes were provided by Giulia.
   live_animals <- c("02151", "02154", "02153", "02194", "02192.01","02191","02152",
@@ -34,24 +37,32 @@ data_base <- observe({
   countryData <- merge(countryData, all_cpc, by = "CPCCode", all.x = TRUE)
   setcolorder(countryData, c("CountryM49","Country","CPCCode","Commodity","ElementCode","Element","Year","Value"))
   value_database$data <- countryData
-  
+
 })
 
-#crop reactive values   
-value <<- reactiveValues(data_crop =NULL)
+#crop reactive values
+value <<- reactiveValues(data_crop =NULL, 
+                         modifiedData = data.table(CPCCode=character(),
+                                                   Commodity=character(),
+                                                   Elementcode=character(),
+                                                   Element=character(),
+                                                   Year = numeric(),
+                                                   Flag= character(),
+                                                   Value = numeric(),
+                                                   LastModified = numeric()))
 df_cropCountry <<- reactiveValues(data_cropCountry =NULL)
 valuesxxx <<-  reactiveValues(test = 'initial')
 observeEvent(input$cropInsert,  {valuesxxx$test = 'add'})
-  
+
 #########
 value <<- reactiveValues(countrym49 =NULL)
-  
-#livestock reactive values   
+
+#livestock reactive values
 value <<- reactiveValues(data_livestock =NULL)
 df_livestockCountry <<- reactiveValues(data_livestockCountry =NULL)
 valuesxxx <<-  reactiveValues(livestock_button = 'initial')
   # observeEvent(input$livestockInsert,  {valuesxxx$livestock_button = 'add'})
-#domain scripts 
+#domain scripts
 crop_production <- crop_production(input,output,session)
 livestock_production <- livestock_production(input,output,session)
 
@@ -70,10 +81,10 @@ if (input$fromyear != "" & nchar(input$fromyear) == 4){
         type = "error"
       )
     }
-  
+
   }
 })
-  
+
   observeEvent(input$endyear,{
 if (input$endyear != "" & nchar(input$endyear) == 4){
   if(input$endyear <= 2013){
@@ -97,23 +108,17 @@ if (input$fromyear != "" & nchar(input$fromyear) == 4 & nchar(input$endyear) == 
         type = "error"
       )
     }
-    
+
   }
 })
 
 saveMessages(input, output, session, buttons= c("saveCrop", "saveLivestock"))
 session$onSessionEnded(function() {
-  # # 
+  # #
   # # session$reload()
   # stopApp()
-  # # 
-  # # 
+  # #
+  # #
 })
 Sys.sleep(1)
 })
-
-
-
-
-
-
