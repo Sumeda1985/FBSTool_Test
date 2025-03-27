@@ -203,20 +203,18 @@ if (length(s) == 0){
 #delete rows in crop table
 
 observeEvent(input$delete_btn_crop, {
-  t = copy(value$data_crop)
-  final_data <- copy(value$data_crop)
-
-  if (!is.null(input$crop_rows_selected)) {
-    t <- t[as.numeric(input$crop_rows_selected),]
-    cpc_code_to_remove <- unique(t$CPCCode)
-    ele_code_to_remove <- unique(t$ElementCode)
-  }
-  value$data_crop<- final_data[!CPCCode %in% cpc_code_to_remove]
-  #remove the cpc with the element from the database
-  database <- copy(value_database$data)
-  database <- database[!(CPCCode %in% cpc_code_to_remove & ElementCode %in% c("5510","5312"))]
-  value_database$data <<- database
-  Add_table_version("crop", copy(value$data_crop))
+  dropdata <- value$data_crop[as.numeric(input$crop_rows_selected),
+                              .(CountryM49=countrycode(input$countrym49, origin = 'country.name', destination = 'un'),
+                                Country=input$countrym49,
+                                CPCCode,
+                                ElementCode=c("5510", "5312"),
+                                StatusFlag=0)]
+  rows_update(contbl, as_tibble(dropdata), 
+              by = c("CountryM49", "Country",
+                     "CPCCode",
+                     "ElementCode"),
+              in_place=TRUE, copy = TRUE, unmatched="ignore")
+  value$data_crop <- value$data_crop[!(CPCCode %in% value$data_crop[as.numeric(input$crop_rows_selected),unique(CPCCode)])]
 })
 
 
