@@ -19,6 +19,9 @@ save_to_database <- function(data ,year_range,session,input,output){
                      by=c("CountryM49","CPCCode","ElementCode","Year"), all = TRUE)
     old_data <- new_data[Value.y!=Value.x|Flag.y!=Flag.x,
                           .(CountryM49,
+                            Country=countrycode(as.numeric(CountryM49), 
+                                                destination = 'country.name', 
+                                                origin = 'un'),
                             CPCCode,
                             ElementCode, 
                             Year,
@@ -28,6 +31,9 @@ save_to_database <- function(data ,year_range,session,input,output){
                             Flag=Flag.x)]
     new_data <- new_data[Value.y!=Value.x|Flag.y!=Flag.x,
                         .(CountryM49,
+                          Country=countrycode(as.numeric(CountryM49), 
+                                              destination = 'country.name', 
+                                              origin = 'un'),
                           CPCCode, ElementCode, Year,
                           StatusFlag=1,
                           LastModified=as.numeric(Sys.time()),
@@ -37,17 +43,17 @@ save_to_database <- function(data ,year_range,session,input,output){
     new_data <- merge(new_data, all_cpc, by = "CPCCode", all.x=TRUE)
     old_data <- merge(old_data, all_elements, by = "ElementCode", all.x=TRUE)
     new_data <- merge(new_data, all_elements, by = "ElementCode", all.x=TRUE)
-    rows_update(contbl, as_tibble(old_data), ##if here needs Commodity , Country and Element columns to use row_update, 
-                #then new_data has to be merged with all_cpc all_elements and create new column with "Country := country"
-                by = c("CountryM49",
-                       "CPCCode","ElementCode"
-                       , "Year", "Value", "Flag",
+    rows_update(contbl, as_tibble(old_data), 
+                by = c("CountryM49", "Country",
+                       "CPCCode", "Commodity",
+                       "ElementCode","Element",
+                       "Year", "Value", "Flag",
                        "LastModified"),
                 in_place=TRUE, copy = TRUE, unmatched="ignore")
     rows_insert(contbl, as_tibble(new_data), 
                 by = c("CountryM49",
-                       "CPCCode","ElementCode"
-                       , "Year", "Value", "Flag",
+                       "CPCCode","ElementCode",
+                       "Year", "Value", "Flag",
                        "LastModified"),
                 in_place=TRUE, copy = TRUE, conflict = "ignore")
 }

@@ -24,6 +24,15 @@ data_base <- observe({
   countryData <- data.table(dbReadTable(con, "dbcountry"))[StatusFlag==1]
   ## countryData[, StatusFlag:=1]
   ## countryData[, LastModified:=as.numeric(Sys.time())]
+  # copy_to(con, countryData, "dbcountry",
+  #         temporary = FALSE,
+  #         indexes = list(
+  #           "CountryM49",
+  #           "CPCCode","ElementCode",
+  #           "Year"
+  #         ),
+  #         overwrite = TRUE
+  # )
   ## dbWriteTable(con, "dbcountry", countryData, overwrite=TRUE)
   countryData[, Value := as.numeric(Value)]
   countryData[, Flag := as.character(Flag)]

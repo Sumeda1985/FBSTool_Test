@@ -9,7 +9,7 @@ packageRequirevInstall = function(){
   packagesCran = c("shiny", "data.table", "shinyBS", "devtools", "ggplot2", "xts", "dygraphs","rhandsontable","datasets",
                     "xtable","shinyFiles", "readxl", "stringr","dplyr","reshape2","readr","openxlsx","shinydashboard","DT","imputeTS", "shinyBS",
                    "igraph","zoo","shinyjs", "shinybusy","V8","reshape","shinythemes", "shinyWidgets", "plotly", "MASS", "lattice","tidyr","RSQLite",
-                   "countrycode","dbplyr","dplyr")
+                   "countrycode","dbplyr","dplyr","DBI","RSQLite")
   
 # if (length(setdiff(packagesCran, rownames(installed.packages()))) > 0) {
     
