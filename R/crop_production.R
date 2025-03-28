@@ -1,16 +1,18 @@
 
 crop_production <- function(input,output,session){
-  observeEvent(input$startContinue,{
-    browser()
-    value$cropDataLong=value_database$data[CPCCode %in% unique(classification[
+  
+observeEvent(input$startContinue,{
+  value$cropDataLong=value_database$data[CPCCode %in% unique(classification[
       classification %in% c("CP","CD","C"), CPCCode])
-      & ElementCode %in% c("5510","5312") & StatusFlag==1,
-      .(CPCCode, ElementCode, Year, Flag, LastModified, Value)][
-        !is.na(Value)]  |> unique()
-    #area sown is removed from production and added to seed
-    crop_production_data <- subset(value_database$data, CPCCode %in% unique(
-      subset(classification, classification %in% c("CP","CD","C"))[,CPCCode]))
-    cropData=wide_format(cropDataLong)
+      & ElementCode %in% c("5510","5312") & Year %in% c(2010:as.numeric(input$endyear)) & StatusFlag==1,
+      .(CountryM49, CPCCode, ElementCode, Year, Flag, LastModified,StatusFlag, Value)][
+        !is.na(Value)]  
+  cropData <- value_database$data[CPCCode %in% unique(classification[ #with variable names to pass to wide format
+  classification %in% c("CP","CD","C"), CPCCode])
+  & ElementCode %in% c("5510","5312","5025") & StatusFlag==1,
+  ][!is.na(Value)]
+
+    cropData=wide_format(cropData)
     flagcols <- grep("^Flag", names(cropData), value = TRUE)
     yearcols <- grep("^[[:digit:]]{4}$", names(cropData), value = TRUE)
     minyear <- min(as.numeric(yearcols))
@@ -29,12 +31,12 @@ crop_production <- function(input,output,session){
       }
       
     }  else {
-      
-      cropData = visualize_data_production(cropData,END_YEAR, session)
+      cropData = visualize_data_production(cropData,input, session)
       cropData[, hidden := ifelse(CPCCode != shift(CPCCode, type = "lead"), 
                                   1, 0)]
       value$data_crop <- cropData
       Add_table_version("crop", copy(value$data_crop))
+   
     }
     
   })
@@ -132,61 +134,53 @@ observeEvent(input$cropInsert, {
 
 if (length(s) == 0){
 
-    data_current <- data.table(value$data_crop)
-    value$data_crop <- data_current
+data_current <- data.table(value$data_crop)
+    
 }
  else {
-    croplistTool <-subset(classification, classification %in% c("CP","C","CD"))
-    croplistTool[,classification := NULL]
-    non_triplet= croplistTool[is.na(`Input Code`)]
-
-    #Requested by China to add 01421 anf 01422 to the crop list.
-
-    groundnuts <- data.table(CPCCode = c("01422","01421"), Commodity = c("Groundnuts in shell","Groundnuts in shell, seed for planting"), `Output Code` = "5510",Output = "Production [t]")
-    non_triplet <- rbind(non_triplet,groundnuts, fill=T)
-    triplet= croplistTool[!(CPCCode %in% unique(non_triplet$CPCCode))]
-    classification_crop=classification[classification %in% c("C", "CD", "CP")]
-    cpc2keep= unique(classification$CPCCode)
-    cpc2keep <- c(cpc2keep,c("01421","01422"))
-    non_triplet=subset(non_triplet, CPCCode %in% cpc2keep)
-    fbscodes=fread("Data/fbsTree.csv")
-    fbscodes=c(unique(fbscodes$id1),unique(fbscodes$id2),unique(fbscodes$id3),unique(fbscodes$id4))
-    non_triplet=subset(non_triplet, !(CPCCode %in% fbscodes))
-    croplistTool=rbind(triplet,non_triplet)
-    croplistTool <- subset(croplistTool,  !CPCCode %in% unique(isolate(value$data_crop$CPCCode) ))
-    croplistTool[,c("Productivity Code", "Productivity") := NULL]
-
-
-    yy=croplistTool[s,]
-    # ff=melt.data.table(yy[,c("CPCCode", "Commodity", "Input Code", "Productivity Code", "Output Code")], id.vars = c("CPCCode", "Commodity"))
-    ff=melt.data.table(yy[,c("CPCCode", "Commodity", "Input Code", "Output Code")], id.vars = c("CPCCode", "Commodity"))
-    ff[,variable:=NULL]
-    setnames(ff,"value", "ElementCode")
-
-    elementName = read_excel("Data/Reference File.xlsx",sheet = "Elements")
-    elementName = data.table(elementName)
-
-    oo=merge(ff,elementName, by.x = "ElementCode",by.y = "ElementCode",all.x  = T)
-    setcolorder(oo,c("CPCCode", "Commodity", "ElementCode", "Element"))
-    oo=oo[order(CPCCode)]
-
-    data=isolate(value$data_crop)
-    data=data.table(data)
-    data[, hidden := NULL]
-
-    if (!(unique(oo$CPCCode) %in% data$CPCCode)){
-
-      data=rbind(oo,data,fill=T)
-      data=data[!is.na(ElementCode)]
-      data[is.na(data)] <- ""
-      yearcols <- grep("^[[:digit:]]{4}$", names(data), value = TRUE)
-      data[, (yearcols) := lapply(.SD, as.numeric), .SDcols = yearcols]
+   croplistTool <-classification[classification %in% c("CP","C","CD")]
+   croplistTool[,classification := NULL]
+   non_triplet= croplistTool[is.na(`Input Code`)]
+   cpc2keep= c(unique(classification$CPCCode),c("01421","01422"))
+   fbscodes=fread("Data/fbsTree.csv")
+   fbscodes=c(unique(fbscodes$id1),unique(fbscodes$id2),unique(fbscodes$id3),unique(fbscodes$id4))
+   
+   #Requested by China to add 01421 anf 01422 to the crop list.
+   groundnuts <- data.table(CPCCode = c("01422","01421"), Commodity = c("Groundnuts in shell","Groundnuts in shell, seed for planting"), `Output Code` = "5510",Output = "Production [t]")
+   non_triplet <- rbind(non_triplet,groundnuts, fill=T)[CPCCode %in% cpc2keep][!(CPCCode %in% fbscodes)] #derived
+   triplet= croplistTool[!(CPCCode %in% unique(non_triplet$CPCCode))]#primary
+   croplistTool <- rbind(triplet,non_triplet)[ !CPCCode %in% unique(isolate(value$data_crop$CPCCode))]
+   #croplistTool <- subset(croplistTool,  !CPCCode %in% unique(isolate(value$data_crop$CPCCode) ))
+   croplistTool[,c("Productivity Code", "Productivity") := NULL]
+   
+   
+   row_add=croplistTool[s,]
+   # ff=melt.data.table(yy[,c("CPCCode", "Commodity", "Input Code", "Productivity Code", "Output Code")], id.vars = c("CPCCode", "Commodity"))
+   row_add=melt.data.table(row_add[,c("CPCCode", "Commodity", "Input Code", "Output Code")], id.vars = c("CPCCode", "Commodity"))[,variable:=NULL]
+   setnames(row_add,"value", "ElementCode")
+   
+   #elementName = read_excel("Data/Reference File.xlsx",sheet = "Elements")
+   #elementName = data.table(elementName)
+   
+   row_add <- merge(row_add,all_elements, by.x = "ElementCode",by.y = "ElementCode",all.x  = T)
+   setcolorder(row_add,c("CPCCode", "Commodity", "ElementCode", "Element"))
+   row_add<- row_add[order(CPCCode)]
+   
+   data=data.table(isolate(value$data_crop))
+   data[, hidden := NULL]
+  
+   if (!(unique(row_add$CPCCode) %in% data$CPCCode)){
+     data=rbind(row_add,data,fill=T)[!is.na(ElementCode)]
+     data[is.na(data)] <- ""
+     yearcols <- grep("^[[:digit:]]{4}$", names(data), value = TRUE)
+     data[, (yearcols) := lapply(.SD, as.numeric), .SDcols = yearcols]
+   }
+   value$insertcropdata <- row_add
+   data[, hidden := ifelse(CPCCode != shift(CPCCode, type = "lead"), 1, 0)]
+   value$data_crop <- data
+  
  }
-
-    data[, hidden := ifelse(CPCCode != shift(CPCCode, type = "lead"), 1, 0)]
-    value$data_crop <- data
-}
-    Add_table_version("crop", copy(value$data_crop))
+   Add_table_version("crop", copy(value$data_crop))
 
 })
 
@@ -201,7 +195,8 @@ observeEvent(input$delete_btn_crop, {
                                 ElementCode=c("5510", "5312"),
                                 StatusFlag=0)]
   value$dropcropdata <- rbind(value$dropcropdata, dropcropdata)
-  value$data_crop <- value$data_crop[!(CPCCode %in% value$data_crop[as.numeric(input$crop_rows_selected),unique(CPCCode)])]
+value$data_crop <- value$data_crop[!(CPCCode %in% value$data_crop[as.numeric(input$crop_rows_selected),unique(CPCCode)])]
+  
 })
 
 
@@ -426,15 +421,12 @@ observeEvent(input$undoCrop, {
 observeEvent(input$saveCrop,{
   data_to_save <- copy(value$data_crop)
   data_to_save[,hidden := NULL]
-  data_to_save <- subset(data_to_save, ElementCode %in% c("5510", "5312","5025"))
-
-
-  invalidateLater(2000)
-  if(rv$active_sessions[1] != session$token){
-    shinyalert(text = "Data is saved by another User. Please save your current work and Refresh", type = "warning")
- }
-
-  save_to_database(data = data_to_save,year_range = c(input$fromyear:input$endyear),session,input,output)
+  data_to_save <- data_to_save[ElementCode %in% c("5510", "5312","5025")]
+#invalidateLater(2000)
+ # if(rv$active_sessions[1] != session$token){
+   # shinyalert(text = "Data is saved by another User. Please save your current work and Refresh", type = "warning")
+ #}
+save_to_database(data = data_to_save,year_range = c(input$fromyear:input$endyear),session,input,output)
  })
 
 output$crop <-
