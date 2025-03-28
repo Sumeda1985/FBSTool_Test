@@ -1,53 +1,44 @@
 
-
 crop_production <- function(input,output,session){
-
-
- observeEvent(input$startContinue,{
-    END_YEAR=input$endyear
-
-    cropDataLong=subset(value_database$data,
-                        CPCCode %in% unique(subset(classification, classification %in% c("CP","CD","C"))[,CPCCode])
-                  & ElementCode %in% c("5510","5312") ) #area sown is removed from production and added to seed
-    crop_production_data <- subset(value_database$data, CPCCode %in% unique(subset(classification, classification %in% c("CP","CD","C"))[,CPCCode]))
-    setDT(cropDataLong)
-    cropDataLong <- cropDataLong[!duplicated(cropDataLong,by=c("CPCCode","Commodity","ElementCode","Element","Year"))]
-    cropDataLong[, c("CountryM49","Country"):=NULL]
-    cropDataLong <- subset(cropDataLong, Year %in% c(2010 : END_YEAR) )
-    cropDataLong <- cropDataLong[!is.na(Value)]
-    cropDataLong <- cropDataLong[!ElementCode == "5327"]
-    value$cropDataLong <- cropDataLong
+  observeEvent(input$startContinue,{
+    browser()
+    value$cropDataLong=value_database$data[CPCCode %in% unique(classification[
+      classification %in% c("CP","CD","C"), CPCCode])
+      & ElementCode %in% c("5510","5312") & StatusFlag==1,
+      .(CPCCode, ElementCode, Year, Flag, LastModified, Value)][
+        !is.na(Value)]  |> unique()
+    #area sown is removed from production and added to seed
+    crop_production_data <- subset(value_database$data, CPCCode %in% unique(
+      subset(classification, classification %in% c("CP","CD","C"))[,CPCCode]))
     cropData=wide_format(cropDataLong)
     flagcols <- grep("^Flag", names(cropData), value = TRUE)
     yearcols <- grep("^[[:digit:]]{4}$", names(cropData), value = TRUE)
     minyear <- min(as.numeric(yearcols))
-    maxyear <- max(as.numeric(yearcols))
-
-  if(END_YEAR > maxyear +1){
-    END_YEAR=as.numeric(END_YEAR)
-    yearsToFill = (maxyear + 1):END_YEAR
-
-    value$data_crop <- NULL
-    if(length(yearsToFill) > 0){
-      # stop(paste("Please compile Crop Prodcution data for the year(s) ",paste(yearsToFill[1:(length(yearsToFill)-1)],collapse = ", ") , " first.", sep = ""))
-      sendSweetAlert(
-        session = session,
-        title = "Error!!",
-        text = paste("Please compile Crop Prodcution data for the year(s) ",paste(yearsToFill[1:(length(yearsToFill)-1)],collapse = ", ") , " first.", sep = ""),
-        type = "error"
-      )
-}
-
-  }  else {
-
-    cropData = visualize_data_production(cropData,END_YEAR, session)
-    cropData[, hidden := ifelse(CPCCode != shift(CPCCode, type = "lead"), 1, 0)]
-    value$data_crop <- cropData
-    Add_table_version("crop", copy(value$data_crop))
-  }
-
-})
-
+    if(input$endyear > max(as.numeric(yearcols)) +1){
+      yearsToFill = (maxyear + 1):as.numeric(input$endyear)
+      
+      value$data_crop <- NULL
+      if(length(yearsToFill) > 0){
+        # stop(paste("Please compile Crop Prodcution data for the year(s) ",paste(yearsToFill[1:(length(yearsToFill)-1)],collapse = ", ") , " first.", sep = ""))
+        sendSweetAlert(
+          session = session,
+          title = "Error!!",
+          text = paste("Please compile Crop Prodcution data for the year(s) ",paste(yearsToFill[1:(length(yearsToFill)-1)],collapse = ", ") , " first.", sep = ""),
+          type = "error"
+        )
+      }
+      
+    }  else {
+      
+      cropData = visualize_data_production(cropData,END_YEAR, session)
+      cropData[, hidden := ifelse(CPCCode != shift(CPCCode, type = "lead"), 
+                                  1, 0)]
+      value$data_crop <- cropData
+      Add_table_version("crop", copy(value$data_crop))
+    }
+    
+  })
+  
 
 
 observeEvent(input$add_Crop, {
