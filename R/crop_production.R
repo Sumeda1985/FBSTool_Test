@@ -203,17 +203,13 @@ if (length(s) == 0){
 #delete rows in crop table
 
 observeEvent(input$delete_btn_crop, {
-  dropdata <- value$data_crop[as.numeric(input$crop_rows_selected),
+  dropcropdata <- value$data_crop[as.numeric(input$crop_rows_selected),
                               .(CountryM49=countrycode(input$countrym49, origin = 'country.name', destination = 'un'),
                                 Country=input$countrym49,
                                 CPCCode,
                                 ElementCode=c("5510", "5312"),
                                 StatusFlag=0)]
-  rows_update(contbl, as_tibble(dropdata), 
-              by = c("CountryM49", "Country",
-                     "CPCCode",
-                     "ElementCode"),
-              in_place=TRUE, copy = TRUE, unmatched="ignore")
+  value$dropcropdata <- rbind(value$dropcropdata, dropcropdata)
   value$data_crop <- value$data_crop[!(CPCCode %in% value$data_crop[as.numeric(input$crop_rows_selected),unique(CPCCode)])]
 })
 

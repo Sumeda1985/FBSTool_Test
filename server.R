@@ -58,7 +58,14 @@ value <<- reactiveValues(data_crop =NULL,
                                                    Year = numeric(),
                                                    Flag= character(),
                                                    Value = numeric(),
-                                                   LastModified = numeric()))
+                                                   LastModified = numeric()),
+                         dropcropdata  = data.table(CountryM49=character(),
+                                             Country=character(),
+                                             CPCCode=character(),
+                                             ElementCode=character(),
+                                             StatusFlag=numeric())
+                         )
+                         
 df_cropCountry <<- reactiveValues(data_cropCountry =NULL)
 valuesxxx <<-  reactiveValues(test = 'initial')
 observeEvent(input$cropInsert,  {valuesxxx$test = 'add'})
