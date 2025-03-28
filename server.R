@@ -19,7 +19,7 @@ onSessionEnded(fun = function(){
 value_database <<- reactiveValues(data =NULL)
 
 ######################3
-data_base <- observe({
+observe({
   #reading country data
   countryData <- data.table(dbReadTable(con, "dbcountry"))[StatusFlag==1]
   ## countryData[, StatusFlag:=1]
@@ -34,20 +34,16 @@ data_base <- observe({
   #         overwrite = TRUE
   # )
   ## dbWriteTable(con, "dbcountry", countryData, overwrite=TRUE)
-  countryData[, Value := as.numeric(Value)]
-  countryData[, Flag := as.character(Flag)]
+  
   # As per requested, live animals must be eliminated. Codes were provided by Giulia.
   live_animals <- c("02151", "02154", "02153", "02194", "02192.01","02191","02152",
                     "02132", "02112","02121.01","02111","02123","02131","02133","02121.02","02192","02122",
                     "02140")
-  countryData <- countryData[!CPCCode %in% live_animals]
-  #countrySUA data cpc codes must be changed with all_cpc
-  countryData[, Commodity := NULL]
+  countryData <- countryData[!CPCCode %in% live_animals][, Commodity := NULL] #needs to consistent with the static table
   countryData <- merge(countryData, all_cpc, by = "CPCCode", all.x = TRUE)
   setcolorder(countryData, c("CountryM49","Country","CPCCode","Commodity","ElementCode","Element","Year","Value"))
   value_database$data <- countryData
-
-})
+ })
 
 #crop reactive values
 value <<- reactiveValues(data_crop =NULL, 
@@ -63,7 +59,12 @@ value <<- reactiveValues(data_crop =NULL,
                                              Country=character(),
                                              CPCCode=character(),
                                              ElementCode=character(),
-                                             StatusFlag=numeric())
+                                             StatusFlag=numeric()),
+                         insertcropdata  = data.table(CountryM49=character(),
+                                                    Country=character(),
+                                                    CPCCode=character(),
+                                                    ElementCode=character(),
+                                                    StatusFlag=numeric())
                          )
                          
 df_cropCountry <<- reactiveValues(data_cropCountry =NULL)
@@ -80,7 +81,7 @@ valuesxxx <<-  reactiveValues(livestock_button = 'initial')
   # observeEvent(input$livestockInsert,  {valuesxxx$livestock_button = 'add'})
 #domain scripts
 crop_production <- crop_production(input,output,session)
-livestock_production <- livestock_production(input,output,session)
+#livestock_production <- livestock_production(input,output,session)
 
 observeEvent(input$startContinue,{
   newtab <- switch(input$fao,"Start" = "production")
