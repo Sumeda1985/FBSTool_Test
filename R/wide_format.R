@@ -1,25 +1,17 @@
 #This function convert a nomarlized table to a denormalized table.
 
 wide_format=function(data){
-  #check for data
-  stopifnot((names(data) %in% c("CPCCode","Commodity","ElementCode",
-                                "Element","Year", "Value", "Flag",
-                                "StatusFlag", "LastModified")))
-  data =  dcast.data.table(data, CPCCode+Commodity+ElementCode+Element ~ Year,
+data =  dcast.data.table(data, CPCCode+Commodity+ElementCode+Element ~ Year,
                            value.var = c("Value","Flag"))
-  flagcols <- grep("^Flag", names(data), value = TRUE)
-  yearcols <- grep("^Value", names(data), value = TRUE)
-  #year and flag vectors should have the same length
-  stopifnot(length(flagcols) == length(yearcols))
-  flagcols_new=gsub("_", " ", flagcols, fixed=TRUE)
-  yearcols_new=gsub("^.*?_","",yearcols)
-  setnames(data, flagcols, flagcols_new)
-  setnames(data, yearcols, yearcols_new)
-  addorder <- as.vector(rbind(yearcols_new, flagcols_new))
-  setcolorder(data,
+names(data)[grep("^Flag",names(data))] <- gsub("_"," ",grep("^Flag", names(data), value=TRUE))
+names(data)[grep("^Value",names(data))] <- gsub("^.*?_","", grep("^Value", names(data), value=TRUE))
+addorder <- as.vector(rbind(yearcols_new, flagcols_new))
+setcolorder(data,
               c("CPCCode", "Commodity", "ElementCode", "Element", addorder))
-  data[, (flagcols_new) := lapply(.SD, as.character), .SDcols = flagcols_new]
-  data[, (yearcols_new) := lapply(.SD, as.numeric), .SDcols = yearcols_new]
-  data[order(CPCCode)]
+data[, (names(data)[grep("^Flag",names(data))]) := lapply(.SD, as.character), .SDcols = 
+       (names(data)[grep("^Flag",names(data))])]
+data[, (names(data)[grep("^Value",names(data))]):= lapply(.SD, as.numeric), 
+     .SDcols = (names(data)[grep("^Value",names(data))])]
+data[order(CPCCode)]
   return(data)
 }
