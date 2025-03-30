@@ -3,71 +3,79 @@ library(shinyjs)
 library(DT)
 
 css <- HTML(
-  "table.dataTable tr.selected td.yellow {
-  background-color: yellow !important
+  "table.dataTable tr.selected td.highlighted {
+    background-color: yellow !important;
   }
-  td.yellow {
-  background-color: yellow !important
+  td.highlighted {
+    background-color: yellow !important;
   }"
 )
-
-
 
 js <- HTML(
-  "function colorizeCell(i, j,id){
-  var selector = 'tr:nth-child(' + i + ') td:nth-child(' + j + ')';
-  $(id).find(selector).addClass('yellow');
+  "function highlightCell(row, col, tableId) {
+    var selector = 'tr:nth-child(' + row + ') td:nth-child(' + col + ')';
+    $(tableId).find(selector).addClass('highlighted');
   }"
 )
 
-
-
-colorizeCell <- function(i, j,id){
-  sprintf("colorizeCell(%d, %d, %s)", i, j, id)
+highlightCell <- function(row, col, tableId) {
+  sprintf("highlightCell(%d, %d, %s)", row, col, tableId)
 }
 
-
-
 ui <- fluidPage(
- 
-  br(),
-  DTOutput("crop"), useShinyjs(),
+  useShinyjs(),
   tags$head(
     tags$style(css),
     tags$script(js)
   ),
   br(),
-  
-  DTOutput("livestock")
+  DTOutput("crop_table"),
+  br(),
+  DTOutput("livestock_table")
 )
 
-dat1 <- iris[1:5, ]
-dat2 <- iris[6:15, ]
-server <- function(input, output, session){
-  
-  output[["crop"]] <- renderDT({
-    datatable(dat1, editable = TRUE)
+crop_data <- iris[1:5, ]
+livestock_data <- iris[6:15, ]
+server <- function(input, output, session) {
+  output[["crop_table"]] <- renderDT({
+    datatable(
+      crop_data,
+      editable = TRUE,
+      options = list(
+        dom = 't',
+        pageLength = 5
+      )
+    )
   }, server = FALSE)
   
-  output[["livestock"]] <- renderDT({
-    datatable(dat2, editable = TRUE)
+  output[["livestock_table"]] <- renderDT({
+    datatable(
+      livestock_data,
+      editable = TRUE,
+      options = list(
+        dom = 't',
+        pageLength = 10
+      )
+    )
   }, server = FALSE)
   
-  observeEvent(input[["crop_cell_edit"]], {
-    info1 <- input[["crop_cell_edit"]]
-    i <- info1[["row"]]
-    j <- info1[["col"]]
-    runjs(colorizeCell(i, j+1,"crop"))
+  observeEvent(input[["crop_table_cell_edit"]], {
+    info <- input[["crop_table_cell_edit"]]
+    runjs(highlightCell(
+      info[["row"]],
+      info[["col"]] + 1,
+      "#crop_table"
+    ))
   })
   
-  observeEvent(input[["livestock_cell_edit"]], {
-    info2 <- input[["livestock_cell_edit"]]
-    i <- info2[["row"]]
-    j <- info2[["col"]]
-    runjs(colorizeCell(i, j+1,"livestock"))
+  observeEvent(input[["livestock_table_cell_edit"]], {
+    info <- input[["livestock_table_cell_edit"]]
+    runjs(highlightCell(
+      info[["row"]],
+      info[["col"]] + 1,
+      "#livestock_table"
+    ))
   })
-  
-  
 }
 
 shinyApp(ui, server)
