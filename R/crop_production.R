@@ -250,50 +250,71 @@ output$downloadCrop <- downloadHandler(
 )
 
 
-# #upload crop denormalized data (#fileCrop)
-
-observeEvent(input$fileCropdenormalized,{
-
-
+#' Handle upload of denormalized crop data
+#' @description Process uploaded Excel file containing denormalized crop data
+observeEvent(input$fileCropdenormalized, {
+  # Get uploaded file information
   inFile <- input$fileCropdenormalized
-  file.rename(inFile$datapath,
-              paste(inFile$datapath, ".xlsx", sep=""))
-  DATA=data.table(read_excel(paste(inFile$datapath, ".xlsx", sep=""), 1))
-  END_YEAR=input$endyear
-
+  
+  # Rename file to ensure Excel extension
+  file.rename(
+    inFile$datapath,
+    paste(inFile$datapath, ".xlsx", sep = "")
+  )
+  
+  # Read uploaded data
+  DATA <- data.table(
+    read_excel(paste(inFile$datapath, ".xlsx", sep = ""), 1)
+  )
+  END_YEAR <- input$endyear
+  
+  # Process denormalized data
   data_denormalized <- copy(DATA)
   data_denormalized <- long_format(data_denormalized)
-  data_denormalized <- data_denormalized[CPCCode %in% unique(subset(classification, classification %in% c("CP","CD","C"))[,CPCCode])]
-  data_denormalized <- data_denormalized[Year %in% c(input$fromyear : input$endyear)]
-  data_denormalized[, c("Commodity","Element") := NULL]
-  data_denormalized[, c("ElementCode", "CPCCode") := lapply(.SD, as.character), .SDcols = c("ElementCode", "CPCCode")]
-
+  
+  # Filter data by CPC codes
+  classification_subset <- subset(
+    classification, 
+    classification %in% c("CP", "CD", "C")
+  )[, CPCCode]
+  
+  data_denormalized <- data_denormalized[
+    CPCCode %in% unique(classification_subset)
+  ]
+  
+  # Filter by year range
+  data_denormalized <- data_denormalized[
+    Year %in% c(input$fromyear:input$endyear)
+  ]
+  
+  # Clean up columns
+  data_denormalized[, c("Commodity", "Element") := NULL]
+  data_denormalized[, 
+    c("ElementCode", "CPCCode") := lapply(
+      .SD, 
+      as.character
+    ),
+    .SDcols = c("ElementCode", "CPCCode")
+  ]
+  
+  # Process crop data
   crop_Data <- data.table(value$data_crop)
   crop_Data <- long_format(crop_Data)
-  crop_Data[, c("Commodity","Element") := NULL]
-  crop_Data[, c("ElementCode", "CPCCode") := lapply(.SD, as.character), .SDcols = c("ElementCode", "CPCCode")]
-
-  xx=crop_Data[!is.na(Value)][
+  crop_Data[, c("Commodity", "Element") := NULL]
+  crop_Data[,
+    c("ElementCode", "CPCCode") := lapply(
+      .SD,
+      as.character
+    ),
+    .SDcols = c("ElementCode", "CPCCode")
+  ]
+  
+  # Join data sets
+  merged_crop_data <- crop_Data[!is.na(Value)][
     data_denormalized,
     on = c("CPCCode", "ElementCode", "Year")
-   ]
-  xx[, c("Value","Flag"):= NULL]
-  setnames(xx,c("i.Value","i.Flag"),c("Value","Flag"))
-  crop_Data <- crop_Data[
-    !xx,
-    on = c("CPCCode", "ElementCode", "Year")]
-  crop_Data <- rbind(crop_Data,xx)
-
-  crop_Data <- merge(crop_Data, all_elements, by = "ElementCode", all.x = T)
-  crop_Data <- merge(crop_Data, all_cpc, by= "CPCCode", all.x = T)
-  crop_Data <- crop_Data[!is.na(Element)]
-  crop_Data <- subset(crop_Data, Year %in% 2010:END_YEAR)
-  crop_Data <- wide_format(crop_Data)
-  crop_Data = visualize_data(crop_Data,END_YEAR)
-  crop_Data[, hidden := ifelse(CPCCode != shift(CPCCode, type = "lead"), 1, 0)]
-  value$data_crop <- crop_Data
-  Add_table_version("crop", copy(value$data_crop))
-
+  ]
+  merged_crop_data[, c("Value", "Flag") := NULL]
 })
 
 
@@ -304,45 +325,79 @@ observeEvent(input$uploadCropModal, {
 
 
 
+#' Create a modal dialog for uploading crop data
+#' @description Creates a modal dialog with file upload and column selection inputs
+#' @param failed Boolean indicating if previous operation failed
+#' @return A modalDialog object containing the upload interface
 uploadCrop <- function(failed = FALSE) {
-
-
-  modalDialog(size = "l",
-
-
-              titlePanel("Upload File"),
-
-              # Sidebar layout with input and output definitions ----
-              sidebarLayout(
-
-                # Sidebar panel for inputs ----
-                sidebarPanel(
-
-                  # Input: Select a file ----
-                  fileInput("fileCrop", "Choose Excel File",
-                            multiple = TRUE,
-                            accept = NULL),
-                  # tags$script('$( "#fileImport" ).on( "click", function() { this.value = null; });'),
-
-                  selectizeInput("cpcCrop", "CPC Code",
-                                 selected = NULL, choices = c("",colnames( df_cropCountry$data_cropCountry)),multiple=F),
-                  selectizeInput("elementCrop", "Element Code",
-                                 selected = NULL, choices = c("",colnames( df_cropCountry$data_cropCountry)) ,multiple=F),
-                  selectizeInput("yearCrop", "Year :",
-                                 selected = NULL, choices = c("",colnames( df_cropCountry$data_cropCountry)),multiple=F),
-                  selectizeInput("valueCrop", "Value :",
-                                 selected = NULL, choices = c("",colnames( df_cropCountry$data_cropCountry)),multiple=F),
-                  selectizeInput("flagCrop", "Flag :",
-                                 selected = NULL, choices = c("",colnames( df_cropCountry$data_cropCountry)),multiple=F),
-                  actionButton("uploadCrop","Upload Crop data")
-                  ),
-
-                # Main panel for displaying outputs ----
-                mainPanel(
-                  div(style = 'overflow-x: scroll', dataTableOutput('cropCountry'))
-                )
-
-              )
+  modalDialog(
+    size = "l",
+    titlePanel("Upload File"),
+    
+    # Main layout
+    sidebarLayout(
+      # Input panel
+      sidebarPanel(
+        # File upload input
+        fileInput(
+          "fileCrop",
+          "Choose Excel File",
+          multiple = TRUE,
+          accept = NULL
+        ),
+        
+        # Column selection inputs
+        selectizeInput(
+          "cpcCrop",
+          "CPC Code",
+          selected = NULL,
+          choices = c("", colnames(df_cropCountry$data_cropCountry)),
+          multiple = FALSE
+        ),
+        selectizeInput(
+          "elementCrop",
+          "Element Code",
+          selected = NULL,
+          choices = c("", colnames(df_cropCountry$data_cropCountry)),
+          multiple = FALSE
+        ),
+        selectizeInput(
+          "yearCrop",
+          "Year",
+          selected = NULL,
+          choices = c("", colnames(df_cropCountry$data_cropCountry)),
+          multiple = FALSE
+        ),
+        selectizeInput(
+          "valueCrop",
+          "Value",
+          selected = NULL,
+          choices = c("", colnames(df_cropCountry$data_cropCountry)),
+          multiple = FALSE
+        ),
+        selectizeInput(
+          "flagCrop",
+          "Flag",
+          selected = NULL,
+          choices = c("", colnames(df_cropCountry$data_cropCountry)),
+          multiple = FALSE
+        ),
+        
+        # Upload button
+        actionButton(
+          "uploadCrop",
+          "Upload Crop data"
+        )
+      ),
+      
+      # Output panel
+      mainPanel(
+        div(
+          style = 'overflow-x: scroll',
+          dataTableOutput('cropCountry')
+        )
+      )
+    )
   )
 }
 
@@ -358,76 +413,95 @@ output$cropCountry <- renderDataTable({
 
 
 observe({
-
-  updateSelectInput(session, "cpcCrop", choices = c("", colnames( df_cropCountry$data_cropCountry)))
-  updateSelectInput(session, "elementCrop", choices = c("",colnames( df_cropCountry$data_cropCountry)))
-  updateSelectInput(session, "yearCrop", choices = c("",colnames( df_cropCountry$data_cropCountry)))
-  updateSelectInput(session, "valueCrop", choices = c("",colnames( df_cropCountry$data_cropCountry)))
-  updateSelectInput(session, "flagCrop", choices = c("",colnames( df_cropCountry$data_cropCountry)))
-
+  # Update all column selection inputs with available choices
+  updateSelectInput(session, "cpcCrop", 
+                   choices = c("", colnames(df_cropCountry$data_cropCountry)))
+  updateSelectInput(session, "elementCrop", 
+                   choices = c("", colnames(df_cropCountry$data_cropCountry)))
+  updateSelectInput(session, "yearCrop", 
+                   choices = c("", colnames(df_cropCountry$data_cropCountry)))
+  updateSelectInput(session, "valueCrop", 
+                   choices = c("", colnames(df_cropCountry$data_cropCountry)))
+  updateSelectInput(session, "flagCrop", 
+                   choices = c("", colnames(df_cropCountry$data_cropCountry)))
 })
 
 #############################################
 observeEvent(input$uploadCrop, {
-  removeModal()
-})
-
-observeEvent(input$uploadCrop,{
+  # Get the uploaded data
   data <- data.table(df_cropCountry$data_cropCountry)
-  if(input$cpcCrop == ""|input$elementCrop == ""| input$yearCrop == ""| input$valueCrop == ""| input$flagCrop == "" ){
+  
+  # Validate required column selections
+  required_cols <- c("cpcCrop", "elementCrop", "yearCrop", "valueCrop", "flagCrop")
+  if (any(sapply(required_cols, function(x) input[[x]] == ""))) {
     sendSweetAlert(
       session = session,
-      title = "Warning !!",
-      text = "Invalid data",
+      title = "Warning",
+      text = "Please select all required columns",
       type = "warning"
     )
-    value$data_crop <- value$data_crop
-
-  } else{
-  data <- data[, c(input$cpcCrop, input$elementCrop, input$yearCrop, input$valueCrop, input$flagCrop), with= F]
-    if (length(names(data)[duplicated(names(data))])>0){
-    sendSweetAlert(
-      session = session,
-      title = "WARNING !!",
-      text = "Please select the colums correctly",
-      type = "warning"
-    )
-    data <- data.table(df_cropCountry$data_cropCountry)
+    return()
   }
-    else{
-    setnames(data,c(input$cpcCrop, input$elementCrop, input$yearCrop, input$valueCrop, input$flagCrop),
-           c("CPCCode","ElementCode","Year","Value","Flag"))
-    #extract only crop commodities
-   data <- data[CPCCode %in% unique(subset(classification, classification %in% c("CP","CD","C"))[,CPCCode])]
-   data <- subset(data, ElementCode %in% c("5312","5510"))
-
-  data[, Year := as.character(Year)]
-  data[, CPCCode := as.character(CPCCode)]
-  data[, ElementCode := as.character(ElementCode)]
-  data <- data[Year %in% c(input$fromyear : input$endyear)]
-
+  
+  # Select and validate columns
+  selected_cols <- c(input$cpcCrop, input$elementCrop, input$yearCrop, 
+                    input$valueCrop, input$flagCrop)
+  data <- data[, selected_cols, with = FALSE]
+  
+  # Check for duplicate column names
+  if (length(names(data)[duplicated(names(data))]) > 0) {
+    sendSweetAlert(
+      session = session,
+      title = "Warning",
+      text = "Please select unique columns",
+      type = "warning"
+    )
+    return()
+  }
+  
+  # Rename columns to standard format
+  setnames(data, selected_cols, 
+           c("CPCCode", "ElementCode", "Year", "Value", "Flag"))
+  
+  # Filter data for crop commodities
+  data <- data[CPCCode %in% unique(subset(classification, 
+                                         classification %in% c("CP", "CD", "C"))[, CPCCode])]
+  data <- subset(data, ElementCode %in% c("5312", "5510"))
+  
+  # Convert columns to character type
+  data[, c("Year", "CPCCode", "ElementCode") := lapply(.SD, as.character),
+       .SDcols = c("Year", "CPCCode", "ElementCode")]
+  
+  # Filter by year range
+  data <- data[Year %in% c(input$fromyear:input$endyear)]
+  
+  # Process existing crop data
   crop <- data.table(value$data_crop)
   crop <- long_format(crop)
-  crop[,c("Commodity","Element") := NULL]
+  crop[, c("Commodity", "Element") := NULL]
   crop[, ElementCode := as.character(ElementCode)]
-  xx <- crop[!is.na(Value)][
-  data, on = c("CPCCode", "ElementCode", "Year")]
-  xx[, c("Value","Flag"):= NULL]
-  setnames(xx,c("i.Value","i.Flag"),c("Value","Flag"))
-  crop <- crop[!is.na(Value)][
-    !xx,
-    on = c("CPCCode", "ElementCode", "Year")
-   ]
-  crop <- rbind(crop,xx)
-  crop <- merge(crop, all_elements, by = "ElementCode", all.x = T)
-  crop <- merge(crop, all_cpc, by= "CPCCode", all.x = T)
+  
+  # Merge new data with existing data
+  new_data <- crop[!is.na(Value)][data, on = c("CPCCode", "ElementCode", "Year")]
+  new_data[, c("Value", "Flag") := NULL]
+  setnames(new_data, c("i.Value", "i.Flag"), c("Value", "Flag"))
+  
+  # Update crop data
+  crop <- crop[!is.na(Value)][!new_data, on = c("CPCCode", "ElementCode", "Year")]
+  crop <- rbind(crop, new_data)
+  
+  # Merge with reference data
+  crop <- merge(crop, all_elements, by = "ElementCode", all.x = TRUE)
+  crop <- merge(crop, all_cpc, by = "CPCCode", all.x = TRUE)
   crop <- crop[!is.na(Element)]
+  
+  # Convert to wide format and add hidden column
   crop <- wide_format(crop)
   crop[, hidden := ifelse(CPCCode != shift(CPCCode, type = "lead"), 1, 0)]
+  
+  # Update values and save version
   value$data_crop <- crop
   Add_table_version("crop", copy(value$data_crop))
-  }
-    }
 })
 
 #### undo crop ####
@@ -443,49 +517,71 @@ observeEvent(input$undoCrop, {
 })
 
 
-##############################################
-
-
-#save crop
-
-observeEvent(input$saveCrop,{
+#' Handle saving crop production data
+#' @description Saves the current crop production data to the database
+observeEvent(input$saveCrop, {
+  # Prepare data for saving
   data_to_save <- copy(value$data_crop)
-  data_to_save[,hidden := NULL]
-  data_to_save <- data_to_save[ElementCode %in% c("5510", "5312","5025")]
-#invalidateLater(2000)
- # if(rv$active_sessions[1] != session$token){
-   # shinyalert(text = "Data is saved by another User. Please save your current work and Refresh", type = "warning")
- #}
-save_to_database(data = data_to_save,year_range = c(input$fromyear:input$endyear),session,input,output)
- })
+  data_to_save[, hidden := NULL]
+  data_to_save <- data_to_save[ElementCode %in% c("5510", "5312", "5025")]
+  
+  # Save to database
+  save_to_database(
+    data = data_to_save,
+    year_range = c(input$fromyear:input$endyear),
+    session = session,
+    input = input,
+    output = output
+  )
+})
 
-output$crop <-
 
-  renderDataTable({
-    if(!is.null(value$data_crop)){
-    datatable (value$data_crop, rownames= FALSE,class = 'cell-border stripe',
+#' Render crop production data table
+#' @description Displays the crop production data in an interactive table with formatting
+output$crop <- renderDataTable({
+  if (!is.null(value$data_crop)) {
+    # Define table options
+    table_options <- list(
+      dom = 'Blfrtip',
+      buttons = I('colvis'),
+      pageLength = 25,
+      scrollX = TRUE,
+      scrollTo = TRUE,
+      scrollY = "500px",
+      autoWidth = TRUE,
+      fixedColumns = list(leftColumns = 4),
+      columnDefs = list(
+        list(width = '150px', targets = c(3)),
+        list(visible = FALSE, targets = (ncol(value$data_crop) - 1))
+      )
+    )
+    
+    # Create editable datatable
+    datatable(
+      value$data_crop,
+      rownames = FALSE,
+      class = 'cell-border stripe',
       editable = list(
-      target = "cell",
-      disable = list(columns = c(0:as.numeric(which( colnames(value$data_crop) == input$fromyear)-2)))),
-      extensions = c("FixedColumns","FixedHeader", "Buttons"),
-       options = list(
-                dom= 'Blfrtip',
-                buttons = I('colvis'),
-                pageLength = 25,
-                 # paging = TRUE,
-                 # sort = TRUE,
-                 scrollX = TRUE,
-                 scrollTo = TRUE,
-                 scrollY = "500px" ,
-                 autoWidth = T,
-                 fixedColumns = list(leftColumns = 4),
-                 columnDefs = list(list(width = '150px', targets = c(3)),
-                                   list(visible = FALSE, targets = (ncol(value$data_crop)-1))
-                 )
-               ))  %>%
-      formatStyle(0:ncol(value$data_crop), valueColumns = "hidden",
-                  `border-bottom` = styleEqual(1, "solid 3px")) %>%
-      formatCurrency(columns = as.character(c(2010:input$endyear)),currency = "", digits = 0,interval = 3, mark = ",")
-    }
-  })
+        target = "cell",
+        disable = list(columns = c(0:as.numeric(which(colnames(value$data_crop) == input$fromyear) - 2)))
+      ),
+      extensions = c("FixedColumns", "FixedHeader", "Buttons"),
+      options = table_options
+    ) %>%
+      # Apply styling
+      formatStyle(
+        0:ncol(value$data_crop),
+        valueColumns = "hidden",
+        `border-bottom` = styleEqual(1, "solid 3px")
+      ) %>%
+      # Format numeric columns
+      formatCurrency(
+        columns = as.character(c(2010:input$endyear)),
+        currency = "",
+        digits = 0,
+        interval = 3,
+        mark = ","
+      )
+  }
+})
 }
