@@ -60,175 +60,193 @@ observeEvent(input$add_Crop, {
 
 
 
+#' Display crop triplets in a modal dialog
+#' @param failed Boolean indicating if previous operation failed
+#' @return A modalDialog object for displaying crop data
 viewCropTriplets <- function(failed = FALSE) {
   modalDialog(
-
-    easyClose = TRUE, size= "l",
-    dataTableOutput("viewCrop")
-    ,
-
+    easyClose = TRUE,
+    size = "l",
+    dataTableOutput("viewCrop"),
     footer = tagList(
-
       actionButton("cropInsert", "Insert")
     )
   )
-
 }
 
 
 
-output$viewCrop= renderDataTable({
-
-  croplistTool <-subset(classification, classification %in% c("C", "CD", "CP"))
-  croplistTool[,classification := NULL]
-  non_triplet= croplistTool[is.na(`Input Code`)]
-
-  #Requested by China to add 01421 anf 01422 to the crop list.
-  groundnuts <- data.table(CPCCode = c("01422","01421"), Commodity = c("Groundnuts in shell","Groundnuts in shell, seed for planting"), `Output Code` = "5510",Output = "Production [t]")
-  non_triplet <- rbind(non_triplet,groundnuts, fill=T)
-  triplet= croplistTool[!(CPCCode %in% unique(non_triplet$CPCCode))]
-
-  classification_crop  <- classification[classification %in% c("C", "CD", "CP")]
-  cpc2keep= unique(classification_crop$CPCCode)
-  ##Requested by China to add 01421 anf 01422 to the crop list.
-  cpc2keep <- c(cpc2keep, c("01421","01422"))
-  non_triplet=subset(non_triplet, CPCCode %in% cpc2keep)
-  fbscodes=fread("Data/fbsTree.csv")
-  fbscodes=c(unique(fbscodes$id1),unique(fbscodes$id2),unique(fbscodes$id3),unique(fbscodes$id4))
-  non_triplet=subset(non_triplet, !(CPCCode %in% fbscodes))
-  croplistTool=rbind(triplet,non_triplet)
-  croplistTool[,c("Productivity Code", "Productivity") := NULL]
-
-  DT=croplistTool
-  DT[["Select"]]<-paste0('<input type="checkbox" name="row_selected" value="Row',1:nrow(DT),'"><br>')
-  DT <- subset(DT,  !CPCCode %in% unique(value$data_crop$CPCCode) )
-
-  datatable(DT,
-            escape=F)
-
-
+output$viewCrop <- renderDataTable({
+  # Get base crop list from classification
+  croplistTool <- subset(classification, classification %in% c("C", "CD", "CP"))
+  croplistTool[, classification := NULL]
+  
+  # Handle non-triplet cases
+  non_triplet <- croplistTool[is.na(`Input Code`)]
+  
+  # Add special groundnut cases as requested by China
+  groundnuts <- data.table(
+    CPCCode = c("01422", "01421"),
+    Commodity = c("Groundnuts in shell", "Groundnuts in shell, seed for planting"),
+    `Output Code` = "5510",
+    Output = "Production [t]"
+  )
+  non_triplet <- rbind(non_triplet, groundnuts, fill = TRUE)
+  
+  # Process triplets
+  triplet <- croplistTool[!(CPCCode %in% unique(non_triplet$CPCCode))]
+  
+  # Filter and combine data
+  classification_crop <- classification[classification %in% c("C", "CD", "CP")]
+  cpc2keep <- unique(c(classification_crop$CPCCode, "01421", "01422"))
+  non_triplet <- subset(non_triplet, CPCCode %in% cpc2keep)
+  
+  # Remove FBS codes
+  fbscodes <- fread("Data/fbsTree.csv")
+  fbscodes <- c(unique(fbscodes$id1), unique(fbscodes$id2), 
+                unique(fbscodes$id3), unique(fbscodes$id4))
+  non_triplet <- subset(non_triplet, !(CPCCode %in% fbscodes))
+  
+  # Combine and clean final dataset
+  croplistTool <- rbind(triplet, non_triplet)
+  croplistTool[, c("Productivity Code", "Productivity") := NULL]
+  
+  # Prepare datatable with selection column
+  DT <- croplistTool
+  DT[["Select"]] <- paste0('<input type="checkbox" name="row_selected" value="Row',
+                          1:nrow(DT), '"><br>')
+  DT <- subset(DT, !CPCCode %in% unique(value$data_crop$CPCCode))
+  
+  datatable(DT, escape = FALSE)
 })
 
 
 observeEvent(input$cropInsert, {
-
-  removeModal()
-
-})
-
-
-proxy_crop = dataTableProxy('crop')
-
-observeEvent(input$crop_cell_edit, {
-info = input$crop_cell_edit
-
-  i = info$row
-  j = (info$col + 1)
-  v = info$value
-  value$data_crop[i,(j) := v]
-  replaceData(proxy_crop, value$data_crop, resetPaging = FALSE,rownames = FALSE)  # important
-  info1 <- input[["crop_cell_edit"]]
-  i <- info1[["row"]]
-  j <- info1[["col"]]
-  runjs(colorizeCell(i, j+1,"crop"))
-
-  Add_table_version("crop", copy(value$data_crop))
-
-})
-
-
-
-
-
-observeEvent(input$cropInsert, {
-
-   s=as.numeric(input$viewCrop_rows_selected)
-
-if (length(s) == 0){
-
-data_current <- data.table(value$data_crop)
+  selected_rows <- as.numeric(input$viewCrop_rows_selected)
+  
+  if (length(selected_rows) == 0) {
+    data_current <- data.table(value$data_crop)
+  } else {
+    # Prepare crop list tool data
+    croplistTool <- classification[classification %in% c("CP", "C", "CD")]
+    croplistTool[, classification := NULL]
+    non_triplet <- croplistTool[is.na(`Input Code`)]
     
-}
- else {
-   croplistTool <-classification[classification %in% c("CP","C","CD")]
-   croplistTool[,classification := NULL]
-   non_triplet= croplistTool[is.na(`Input Code`)]
-   cpc2keep= c(unique(classification$CPCCode),c("01421","01422"))
-   fbscodes=fread("Data/fbsTree.csv")
-   fbscodes=c(unique(fbscodes$id1),unique(fbscodes$id2),unique(fbscodes$id3),unique(fbscodes$id4))
-   
-   #Requested by China to add 01421 anf 01422 to the crop list.
-   groundnuts <- data.table(CPCCode = c("01422","01421"), Commodity = c("Groundnuts in shell","Groundnuts in shell, seed for planting"), `Output Code` = "5510",Output = "Production [t]")
-   non_triplet <- rbind(non_triplet,groundnuts, fill=T)[CPCCode %in% cpc2keep][!(CPCCode %in% fbscodes)] #derived
-   triplet= croplistTool[!(CPCCode %in% unique(non_triplet$CPCCode))]#primary
-   croplistTool <- rbind(triplet,non_triplet)[ !CPCCode %in% unique(isolate(value$data_crop$CPCCode))]
-   #croplistTool <- subset(croplistTool,  !CPCCode %in% unique(isolate(value$data_crop$CPCCode) ))
-   croplistTool[,c("Productivity Code", "Productivity") := NULL]
-   
-   
-   row_add=croplistTool[s,]
-   # ff=melt.data.table(yy[,c("CPCCode", "Commodity", "Input Code", "Productivity Code", "Output Code")], id.vars = c("CPCCode", "Commodity"))
-   row_add=melt.data.table(row_add[,c("CPCCode", "Commodity", "Input Code", "Output Code")], id.vars = c("CPCCode", "Commodity"))[,variable:=NULL]
-   setnames(row_add,"value", "ElementCode")
-   
-   #elementName = read_excel("Data/Reference File.xlsx",sheet = "Elements")
-   #elementName = data.table(elementName)
-   
-   row_add <- merge(row_add,all_elements, by.x = "ElementCode",by.y = "ElementCode",all.x  = T)
-   setcolorder(row_add,c("CPCCode", "Commodity", "ElementCode", "Element"))
-   row_add<- row_add[order(CPCCode)]
-   
-   data=data.table(isolate(value$data_crop))
-   data[, hidden := NULL]
+    # Define codes to keep
+    cpc2keep <- c(unique(classification$CPCCode), c("01421", "01422"))
+    
+    # Get FBS codes to exclude
+    fbscodes <- fread("Data/fbsTree.csv")
+    fbscodes <- c(unique(fbscodes$id1), 
+                  unique(fbscodes$id2), 
+                  unique(fbscodes$id3), 
+                  unique(fbscodes$id4))
+    
+    # Add special groundnut cases as requested
+    groundnuts <- data.table(
+      CPCCode = c("01422", "01421"),
+      Commodity = c("Groundnuts in shell", "Groundnuts in shell, seed for planting"),
+      `Output Code` = "5510",
+      Output = "Production [t]"
+    )
+    
+    # Process non-triplet data
+    non_triplet <- rbind(non_triplet, groundnuts, fill = TRUE)[
+      CPCCode %in% cpc2keep
+    ][!(CPCCode %in% fbscodes)]
+    
+    # Process triplet data
+    triplet <- croplistTool[!(CPCCode %in% unique(non_triplet$CPCCode))]
+    
+    # Combine and filter crop list
+    croplistTool <- rbind(triplet, non_triplet)[
+      !CPCCode %in% unique(isolate(value$data_crop$CPCCode))
+    ]
+    croplistTool[, c("Productivity Code", "Productivity") := NULL]
+    
+    # Process selected rows
+    row_add <- croplistTool[selected_rows, ]
+    row_add <- melt.data.table(
+      row_add[, c("CPCCode", "Commodity", "Input Code", "Output Code")],
+      id.vars = c("CPCCode", "Commodity")
+    )[, variable := NULL]
+    
+    setnames(row_add, "value", "ElementCode")
+    
+    # Merge with element information
+    row_add <- merge(
+      row_add, 
+      all_elements, 
+      by.x = "ElementCode",
+      by.y = "ElementCode",
+      all.x = TRUE
+    )
+    
+    # Set column order and sort
+    setcolorder(row_add, c("CPCCode", "Commodity", "ElementCode", "Element"))
+    row_add <- row_add[order(CPCCode)]
+    
+    # Update data table
+    data <- data.table(isolate(value$data_crop))
+    data[, hidden := NULL]
+    
+    if (!(unique(row_add$CPCCode) %in% data$CPCCode)) {
+      data <- rbind(row_add, data, fill = TRUE)[!is.na(ElementCode)]
+      data[is.na(data)] <- ""
+      yearcols <- grep("^[[:digit:]]{4}$", names(data), value = TRUE)
+      data[, (yearcols) := lapply(.SD, as.numeric), .SDcols = yearcols]
+    }
+    
+    # Store inserted data and update main table
+    value$insertcropdata <- row_add
+    data[, hidden := ifelse(CPCCode != shift(CPCCode, type = "lead"), 1, 0)]
+    value$data_crop <- data
+  }
   
-   if (!(unique(row_add$CPCCode) %in% data$CPCCode)){
-     data=rbind(row_add,data,fill=T)[!is.na(ElementCode)]
-     data[is.na(data)] <- ""
-     yearcols <- grep("^[[:digit:]]{4}$", names(data), value = TRUE)
-     data[, (yearcols) := lapply(.SD, as.numeric), .SDcols = yearcols]
-   }
-   value$insertcropdata <- row_add
-   data[, hidden := ifelse(CPCCode != shift(CPCCode, type = "lead"), 1, 0)]
-   value$data_crop <- data
-  
- }
-   Add_table_version("crop", copy(value$data_crop))
-
+  # Save version history
+  Add_table_version("crop", copy(value$data_crop))
 })
 
 
-#delete rows in crop table
-
+#' Handle deletion of selected rows in crop table
 observeEvent(input$delete_btn_crop, {
-  dropcropdata <- value$data_crop[as.numeric(input$crop_rows_selected),
-                              .(CountryM49=countrycode(input$countrym49, origin = 'country.name', destination = 'un'),
-                                Country=input$countrym49,
-                                CPCCode,
-                                ElementCode=c("5510", "5312"),
-                                StatusFlag=0)]
-  value$dropcropdata <- rbind(value$dropcropdata, dropcropdata)
-value$data_crop <- value$data_crop[!(CPCCode %in% value$data_crop[as.numeric(input$crop_rows_selected),unique(CPCCode)])]
+  # Create record of dropped data
+  dropcropdata <- value$data_crop[
+    as.numeric(input$crop_rows_selected),
+    .(
+      CountryM49 = countrycode(input$countrym49, origin = 'country.name', destination = 'un'),
+      Country = input$countrym49,
+      CPCCode,
+      ElementCode = c("5510", "5312"),
+      StatusFlag = 0
+    )
+  ]
   
+  # Update dropped data record and remove from main table
+  value$dropcropdata <- rbind(value$dropcropdata, dropcropdata)
+  value$data_crop <- value$data_crop[!(CPCCode %in% value$data_crop[
+    as.numeric(input$crop_rows_selected), unique(CPCCode)
+  ])]
 })
 
 
-#download excle file (#downloadCrop)
-
+#' Download handler for crop production data
+#' @description Exports crop production data to Excel format
 output$downloadCrop <- downloadHandler(
-
   filename = function() {
-
     "crop_production.xlsx"
   },
-
   content = function(file) {
-
+    # Prepare data for download
     data_download_crop <- data.table(value$data_crop)
+    
+    # Remove rows with missing CPCCode and hidden column
     data_download_crop <- data_download_crop[!is.na(CPCCode)]
-    data_download_crop[,hidden := NULL]
-    write.xlsx(data_download_crop ,file,row.names = FALSE)
+    data_download_crop[, hidden := NULL]
+    
+    # Write to Excel file
+    write.xlsx(data_download_crop, file, row.names = FALSE)
   }
-
 )
 
 
