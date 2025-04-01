@@ -79,11 +79,4 @@ save_to_database <- function(data ,year_range,session,input,output){
   } else {
     value$insertcropdata <- NULL
   }
-  
-  
-  
-  
-  
-  
-  
 }

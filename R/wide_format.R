@@ -7,9 +7,9 @@ wide_format=function(data){
   data[, (grep("^Value", names(data), value=TRUE)):= lapply(.SD, as.numeric), 
        .SDcols = (grep("^Value", names(data), value=TRUE))]
   setcolorder(data,
-              c("CPCCode", "Commodity", "ElementCode", "Element", 
-                grep("^Value", names(data), value=TRUE),
-                grep("^Flag", names(data), value=TRUE)))
+              c("CPCCode", "Commodity", "ElementCode", "Element", rbind(grep("^Value", names(data), value=TRUE),
+                grep("^Flag", names(data), value=TRUE)
+                )))
   names(data)[grep("^Flag",names(data))] <- gsub("_"," ",
                                                  grep("^Flag", names(data), 
                                                       value=TRUE))
