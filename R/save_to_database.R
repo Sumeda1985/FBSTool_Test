@@ -15,16 +15,15 @@
 #' @importFrom dplyr rows_update
 #' @importFrom dplyr rows_delete
 #' @importFrom dplyr rows_insert
-save_to_database <- function(data, year_range, session, input, output) {
-  # Convert data to long format and prepare columns
+save_to_database <- function(data,longData, year_range, session, input, output,data_session) {
+ # Convert data to long format and prepare columns
   data <- long_format(data)
   data[, c("Commodity", "Element") := NULL]
   col_format <- c("ElementCode", "Year", "CPCCode")
   data[, (col_format) := lapply(.SD, as.character), .SDcols = (col_format)]
-  
-  # Merge new and old data frames
+ # Merge new and old data frames
   new_data <- merge(
-    value$cropDataLong[, (col_format) := lapply(.SD, as.character),
+    longData[, (col_format) := lapply(.SD, as.character),
                        .SDcols = (col_format)],
     data,
     by = c("CPCCode", "ElementCode", "Year"),
@@ -32,7 +31,7 @@ save_to_database <- function(data, year_range, session, input, output) {
   )
   
   # Prepare old data for records that have changed
-  old_data <- new_data[Value.y != Value.x | Flag.y != Flag.x,
+  old_data <- new_data[Value.y != Value.x | Flag.y != Flag.x|is.na(Value.y != Value.x)|is.na(Flag.y != Flag.x) ,
                        .(CountryM49 = as.character(
                          countrycode(input$countrym49,
                                    origin = "country.name",
@@ -46,12 +45,13 @@ save_to_database <- function(data, year_range, session, input, output) {
                          Value = Value.x,
                          Flag = Flag.x)]
   
-  # Prepare new data for records that have changed
-  new_data <- new_data[Value.y != Value.x | Flag.y != Flag.x,
-                       .(CountryM49 = as.character(CountryM49),
-                         Country = countrycode(as.numeric(CountryM49),
-                                             destination = "country.name",
-                                             origin = "un"),
+# Prepare new data for records that have changed
+  new_data <- new_data[Value.y != Value.x | Flag.y != Flag.x |is.na(Value.y != Value.x)|is.na(Flag.y != Flag.x),
+                       .(CountryM49 = as.character(
+                         countrycode(input$countrym49,
+                                     origin = "country.name",
+                                     destination = "un")),
+                         Country = input$countrym49,
                          CPCCode,
                          ElementCode,
                          Year,
@@ -70,43 +70,43 @@ save_to_database <- function(data, year_range, session, input, output) {
   rows_update(
     contbl,
     as_tibble(new_data),
-    by = c("CountryM49", "Country",
-           "CPCCode", "Commodity",
-           "ElementCode", "Element",
+    by = c("CountryM49",
+           "CPCCode",
+           "ElementCode", 
            "Year"),
     in_place = TRUE,
     copy = TRUE,
     unmatched = "ignore"
   )
-  
-  # Handle deletions
-  if (!is.null(nrow(value$dropcropdata))) {
-    rows_delete(
+  updateSUA <- updateSUA(input,output,session)
+# Handle deletions
+  if (!is.null(nrow(value$dropdata))) {
+  rows_delete(
       contbl,
-      as_tibble(value$dropcropdata),
+      as_tibble(value$dropdata),
       by = c("CountryM49", "Country",
              "CPCCode", "ElementCode"),
       in_place = TRUE,
       copy = TRUE,
       unmatched = "ignore"
     )
-    value$dropcropdata <- value$dropcropdata[0, ]
+    value$dropdata <- value$dropdata[0, ]
+    value_database$data <- value$dropdata
+    updateSUA <- updateSUA(input,output,session)
   } else {
-    value$dropcropdata <- NULL
+    value$dropdata <- NULL
   }
-  
-  # Handle insertions
-  if (!is.null(nrow(value$insertcropdata))) {
-    insertData <- long_format(
-      value$data_crop[CPCCode %in% unique(value$insertcropdata$CPCCode) &
-                      ElementCode %in% (value$insertcropdata$ElementCode)]
+# Handle insertions
+  if (!is.null(nrow(value$insertdata))) {
+ insertData <- long_format(
+      data_session[CPCCode %in% unique(value$insertdata$CPCCode) &
+                     ElementCode %in% (value$insertdata$ElementCode)]
     )
-    
     insertData[, `:=`(
       CountryM49 = as.character(
         countrycode(input$countrym49,
-                   origin = "country.name",
-                   destination = "un")
+                    origin = "country.name",
+                    destination = "un")
       ),
       Country = input$countrym49,
       StatusFlag = 1,
@@ -120,13 +120,18 @@ save_to_database <- function(data, year_range, session, input, output) {
       by = c("CountryM49",
              "CPCCode",
              "ElementCode",
-             "Year", "Value", "Flag",
-             "LastModified", "StatusFlag"),
+             "Year"
+        ),
       in_place = TRUE,
       copy = TRUE,
       conflict = "ignore"
     )
+    
+    #value_database$data <- value$insertdata
+    
+    updateSUA <- updateSUA(input,output,session)
   } else {
-    value$insertcropdata <- NULL
+    value$insertdata <- NULL
   }
+  
 }

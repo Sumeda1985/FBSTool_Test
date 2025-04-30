@@ -1,11 +1,6 @@
 saveMessages=function(input,output,session, buttons){
-  
-  
   lapply(buttons, function(x){
-    
-    
-    
-    observeEvent(input[[paste(x)]], {
+   observeEvent(input[[paste(x)]], {
       if(x == "residualSave"){
       sendSweetAlert(
         session = session,
@@ -20,8 +15,7 @@ saveMessages=function(input,output,session, buttons){
           text = "Missing values have been imputed successfully. Please refer to the manual for the methodology applied.",
           type = "success"
         )
-        
-      }else{
+     }else{
         sendSweetAlert(
           session = session,
           title = "Saved !!",
@@ -31,38 +25,14 @@ saveMessages=function(input,output,session, buttons){
       }
     }
     )
-    
   })
-    
- 
-  
-  
-  # observeEvent(input$foodSave, {
-  #    if (input$endyear %in% c(2010:2013)){
-  # 
-  #      sendSweetAlert(
-  #        session = session,
-  #        title = paste("Tourist Food is not an element in ",input$endyear, "  !!", sep = ""),
-  #        text = "Moving to Loss Module",
-  #        type = "info"
-  #      )
-  # 
-  #    }
-  # 
-  # })
-  
-  
-   
-  observeEvent(input$seedSave, {
+ observeEvent(input$seedSave, {
     if (input$endyear %in% c(2010:2013)){
-      
       sendSweetAlert(
         session = session,
         title = paste("Industrial use is not an element in ",input$endyear, "  !!", sep = ""),
         text = "Moving to Residual and Other Uses Module",
         type = "info"
       )
-      
-    }
-    
-  })}
+  }
+})}

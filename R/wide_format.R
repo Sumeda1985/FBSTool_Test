@@ -47,5 +47,5 @@ wide_format = function(data) {
            new = c(new_flag_names, new_value_names))
 
   # Return sorted data
-  data[order(CPCCode)]
+  data <- data[order(CPCCode)]
 }
