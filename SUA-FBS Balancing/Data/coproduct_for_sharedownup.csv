@@ -1,0 +1,75 @@
+"measured_item_child_cpc","item_name","branch","item_name_branch","note1","note2"
+"39120.01","Bran of Wheat","23110","wheat and meslin flour",NA,NA
+"23140.01","Germ of Wheat","23110","wheat and meslin flour",NA,NA
+"23220.02","Wheat Gluten","23220.01","starch of wheat",NA,NA
+"39120.13","Bran of Cereals nes","23120.90","flour of cereals nes",NA,NA
+"23540","Molasses (from beet, cane and maize)","23511.01","raw centrifugal",NA,NA
+"39140.01","Beet Pulp","23512","beet sugar","39149.01","different code: SWS vs Valentina's file"
+"21910.07","Cake of  Sunflower seed","21631.01","sunflower-seed oil, crude",NA,NA
+"02951.01","Raw hides and skins of cattle",NA,NA,NA,NA
+"02953","Raw hides and skins of sheep or lambs",NA,NA,NA,NA
+"02954","Raw hides and skins of goats or kids",NA,NA,NA,NA
+"39120.02","Bran of Rice","23161.01 or 23161.02","rice, milled (husked) or rice, milled","to be decided",NA
+"39120.04","Bran of Maize","23120.03","flour of maize",NA,NA
+"39120.07","Bran of Millet","23120.05","flour of millet",NA,NA
+"39140.02","Bagasse","23511.01","raw centrifugal",NA,NA
+"21910.09","Olive Residues","2167","olive oil",NA,NA
+"21910.11","Cake of  Sesame seed","21691.07","oil of sesame seed",NA,NA
+"21910.15","Cake of  Cottonseed","2168","cottonseed oil",NA,NA
+"21910.16","Cake of  Linseed","21691.12","oil of linseed",NA,NA
+"01921.02","Cotton lint, ginned","0143","cottonseed",NA,NA
+"F0769","cotton waste","0143","cottonseed",NA,NA
+"21800","Cotton linters","2168","cottonseed oil",NA,NA
+"02959.02","Raw skins of camels",NA,NA,NA,NA
+"39120.03","Bran of Barley","23140.04","pot barley",NA,NA
+"39120.05","Bran of Rye","23120.04","flour of rye",NA,NA
+"21910.03","Cake of  Soya beans","2161","soya bean oil",NA,NA
+"21910.04","Cake of  Groundnuts","2162","groundnut oil",NA,NA
+"39120.18","Marc of grape","24212.01","must of grape",NA,NA
+"02959.01","Raw skins of swine",NA,NA,NA,NA
+"39120.08","Bran of Sorghum","23120.06","flour of sorghum",NA,NA
+"21910.08","Cake of  Rapeseed","21641.01","rapeseed or canola oil , crude",NA,NA
+"21910.10","Cake of  Safflowerseed","21631.02","safflower-seed oil, crude",NA,NA
+"39150.02","Cocoa Husks and Shells","23610.01","cocoa paste not defatted",NA,NA
+"F0665","cocoa powder and cake","23620","cocoa butter, fat and oil","should be opposite",NA
+"02952.01","Raw hides and skins of horses",NA,NA,NA,NA
+"02955.02","Rabbit skins",NA,NA,NA,NA
+"21910.05","Cake of Copra","2166","coconut oil",NA,NA
+"39120.14","Bran of Pulses","23170.03","flour of pulses",NA,NA
+"21910.06","Cake of  Palm kernel","21691.14","oil of palm kernel",NA,NA
+"21910.02","Cake of Maize","21691.02","oil of maize",NA,NA
+"39120.06","Bran of Oats","23140.07","oats, rolled",NA,NA
+"39130.03","Potato Offals","21313","potatoes, frozen",NA,NA
+"39130.01","Rice, Gluten","23220.03","starch of rice",NA,NA
+"21910.12","Cake of  Mustard seed","21641.02","mustardseed oil, crude",NA,NA
+"23120.02","Barley Flour and Grits","23140.05","barley, pearled",NA,NA
+"39120.12","Bran of Mixed Grain","23120.10","flour of mixed grain",NA,NA
+"21910.90","Cake of Oilseeds nes","21691.90","other oil of vegetable origin, crude n.e.c.",NA,NA
+"21910.01","Cake of Rice Bran","21691.01","oil of rice bran",NA,NA
+"02951.03","Raw hides and skins of buffaloes",NA,NA,NA,NA
+"39120.09","Bran of Buckwheat","23120.07","flour of buckwheat",NA,NA
+"39120.11","Bran of Triticale","23120.09","flour of triticale",NA,NA
+"21499.01","Mango Pulp","21439.08","juice of mango",NA,NA
+"02952.02","Raw hides and skins of asses",NA,NA,NA,NA
+"02952.03","Raw hides and skins of mules",NA,NA,NA,NA
+"21910.17","Cake of Hempseed","21691.13","oil of hempseed",NA,NA
+"39120.10","Bran of Fonio","23120.08","flour of fonio",NA,NA
+"21910.14","Cake of Kapok","21691.11","oil of kapok",NA,NA
+"01929.03","Kapok fibre, raw","01499.06","kapokseed in shell",NA,NA
+"01930.03","Pyrethrum Marc",NA,NA,"not identified",NA
+"23933.01",NA,NA,NA,NA,NA
+"22290","Dairy products n.e.",NA,NA,"not identified",NA
+"22270","Ice cream and other edible ice",NA,NA,"not identified",NA
+"23140.06","Germ of Maize","23120.03","flour of maize",NA,NA
+"39130.02","Maize gluten","23220.04","starch of maize",NA,NA
+"39149.01","Beet pulp","23512","beet sugar",NA,NA
+"21910.13","Cake of  poppy seed","21691.08","oil of poppy seed",NA,NA
+"21691.09","Vegetable tallow","21691.10","stillingia oil",NA,NA
+"21419.91","Other tropical fruit, dried",NA,NA,"not identified",NA
+"21512.01","Cattle, butcher fat","21111.02","meat of cattle boneless, fresh or chilled",NA,NA
+"22242.01","Butter of buffalo milk","22110.04","skim milk of buffalo",NA,NA
+"22249.01","Butter and ghee of sheep milk","22110.05","skim sheep milk",NA,NA
+"22249.02","Butter of goat milk","22110.06","skim milk of goat",NA,NA
+"21511.02","Pig, butcher fat","21113.02","meat of pig boneless, fresh or chilled",NA,NA
+"21160.01","Edible offals and liver of chickens and guinea fowl, fresh, chilled or frozen","21121","meat of chickens, fresh or chilled",NA,NA
+"01491.02","Palm Kernels","2165","palm oil",NA,NA

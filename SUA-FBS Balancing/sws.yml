@@ -1,0 +1,23 @@
+current: production
+qa:
+  #certdir: C:/Users/Siriwardenas/Documents/.R/QA
+  certdir: ~/.R/QA/
+  server: https://hqlqasws1.hq.un.fao.org:8181/sws
+  token: d078a72e-4391-45dd-8206-f51df1295f12 #Guinea
+  #token: 5f8e7da9-5798-4839-bdf1-71d8f9c792ba #Tanzania
+  
+  
+  
+  
+  share: "Z:"
+  
+
+
+production:
+  certdir: C:/Users/SiriwardenaS/Documents/certificates/production
+  server: https://sws.aws.fao.org:8181
+  token:  543f1d73-1d71-499e-b084-bf17f346f2b7 #Lesotho
+  # d81be596-fe8a-4623-81e3-274cf1777f1d #Philipines
+  # token:  9706d2fc-b35a-4a3c-9469-503380045716 #Malawi  
+  share: "Z:"
+
