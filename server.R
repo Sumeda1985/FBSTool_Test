@@ -58,8 +58,11 @@ shinyServer <- function(input, output, session) {
   # Load and process country data
   observe({
     # Read country data from database
-    countryData <- data.table(dbReadTable(con, "dbcountry"))[StatusFlag == 1]
+    countryData <- data.table(dbReadTable(con, "dbcountry"))[StatusFlag == 1]#reading new data.old data
+    #will have status flag 0.
     # Filter out live animals
+    #filter for the Country
+    countryData <- countryData[Country %in% input$countrym49]#very important to subset for the country
     live_animals <- c(
       "02151", "02154", "02153", "02194", "02192.01", "02191", "02152",
       "02132", "02112", "02121.01", "02111", "02123", "02131", "02133",

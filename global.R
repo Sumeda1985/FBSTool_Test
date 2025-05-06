@@ -4,6 +4,8 @@ library(DBI)
 library(data.table)
 library(readxl)
 
+
+userauth <- readRDS("userauth.rds")
 # Initialize reactive values
 rv <- reactiveValues()
 #In case to overwrite the database. database is the SUA Balanced 
