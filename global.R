@@ -1,4 +1,11 @@
-# Required libraries
+library(shiny)
+library(DBI)
+library(RPostgres)
+library(data.table)
+library(readxl)
+library(sodium)
+
+## Required libraries
 ## In the first argument of apppath, provide the location of the shiny tool
 #apppath<-file.path("~/fao2025","FBSTool_Test")
 apppath<-getwd()
