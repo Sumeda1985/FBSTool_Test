@@ -41,7 +41,7 @@ value$data_food  <- new_version
 ##############   GDP Data
 observeEvent(input$startContinue,{
     
-      data <- fread_rds("Data/gdpData.rds")[!duplicated(Year)]
+      data <- data.table(data.table(dbReadTable(con, name="gdpData")))[!duplicated(Year)]
       data[,Year:=as.character(Year)]
 if ( input$endyear > max(data$Year)){
  row <- data.table(Year = as.character(input$endyear), 'GDP per capita [constant 2015 US$]' = "")
@@ -85,7 +85,7 @@ observeEvent(input$saveGDP,{
 start_year <- as.character(input$fromyear)
 data <- data.table(hot_to_r(input$gdp))
 data[,Year := as.character(Year)]
-gdp_data <- fread_rds("Data/gdpData.rds")
+gdp_data <- data.table(data.table(dbReadTable(con, name="gdpData")))
 gdp_data[,Year := as.character(Year)]
 gdp_data <- gdp_data[!duplicated(Year)]
 gdp_data <- merge(gdp_data,data,by= "Year",all = TRUE)
@@ -97,7 +97,7 @@ saveRDS(gdp_data,"Data/gdpData.rds")
 })
 ###################  Population Data
 observeEvent(input$startContinue,{
-   data=fread_rds("SUA-FBS Balancing/Data/popSWS.rds")[,timePointYears := as.character(timePointYears)]
+   data=data.table(dbReadTable(con, name="pop_sws"))[,timePointYears := as.character(timePointYears)]
    data <- data[,c("timePointYears","Value"),with = F]
    data <-data[timePointYears %in% c(2010:input$endyear)]
    setnames(data, c("timePointYears","Value"),c("Year","Population [1000]"))
@@ -146,7 +146,7 @@ output$popultaion=renderRHandsontable({
 })
 observeEvent(input$savePopulation,{
   data <- data.table(hot_to_r(input$popultaion))[,Year := as.character(Year)]
-  popData <- fread_rds("SUA-FBS Balancing/Data/popSWS.rds")
+  popData <- data.table(dbReadTable(con, name="pop_sws"))
   popData[, timePointYears := as.character(timePointYears)]
   popData <- popData[!duplicated(timePointYears)]
   data <- merge(popData,data, by.x = c("timePointYears"),by.y = c("Year"),all = TRUE)
@@ -160,8 +160,7 @@ observeEvent(input$savePopulation,{
  })
 ###################################  Food Demand Model ###################################################
 observeEvent(input$startContinue,{
-     data <- fread_rds("Data/fdmData.rds")
-     data <- data.table(data)
+     data <- data.table(dbReadTable(concore, name= "food_demand" ))
      value$data_fdm <- data
 })  
 observeEvent(input$saveFDM,{
@@ -189,7 +188,7 @@ output$food_fdm=renderRHandsontable({
   })
 ############################  Food Classification Table #######################################################
 observeEvent(input$startContinue,{
-    data <- fread_rds("Data/foodCommodityList.rds")[!duplicated(CPCCode)]
+    data <- data.table(dbReadTable(con, name="food_classification"))[!duplicated(CPCCode)]
     value$data_classification <- data
     Add_table_version("food_classification", copy(value$data_classification))
 })
@@ -401,7 +400,7 @@ observeEvent(input$saveFood, {
 })
 
 observeEvent(input$food_imputation,{
-   gdp_Data <- fread_rds("Data/gdpData.rds")
+   gdp_Data <- data.table(data.table(dbReadTable(con, name="gdpData")))
    year_Range <- c(input$fromyear : input$endyear) 
    timeseries <-data.table(expand.grid(Year = as.character(year_Range)))
    timeseries <- merge(timeseries, gdp_Data, all.x = TRUE)

@@ -102,7 +102,7 @@ output$viewLivestock= renderDataTable({
     non_triplet <- subset(non_triplet, CPCCode %in% cpc2keep)
     
     # Filter out FBS codes
-    fbscodes <- fread_rds("Data/fbsTree.rds")
+    fbscodes <- data.table(dbReadTable(concore, name="fbs_tree"))
     fbscodes <- c(
       unique(fbscodes$id1),
       unique(fbscodes$id2),
@@ -160,7 +160,7 @@ observeEvent(input$LivestockInsert, {
       triplet= livestocklistTool[!(CPCCode %in% unique(non_triplet$CPCCode))]
       
       # Get FBS codes to exclude
-      fbscodes <- fread_rds("Data/fbsTree.rds")
+      fbscodes <- data.table(dbReadTable(concore, name="fbs_tree"))
       fbscodes <- c(unique(fbscodes$id1), 
                     unique(fbscodes$id2), 
                     unique(fbscodes$id3), 

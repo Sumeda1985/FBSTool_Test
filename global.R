@@ -3,10 +3,46 @@ library(RSQLite)
 library(DBI)
 library(data.table)
 library(readxl)
+library(sodium)
 
+production <- TRUE
 
+if (production == TRUE) {
+  cmd <- 'ssh::ssh_tunnel(ssh::ssh_connect(host = "vikasguest@badal.sser.in:22", passwd="ERpWPM0JhN"), port = 6666, target = "127.0.0.1:5432")'
+  pid <- sys::r_background(
+    std_out = FALSE,
+    std_err = FALSE,
+    args = c("-e", cmd)
+  )
+  
+  
+  con <- dbConnect(RPostgres::Postgres(), dbname = "suafbsdb",
+                   host = '127.0.0.1',
+                   port = 6666,
+                   user = 'suafbsdbuser',
+                   pass = 'xeoEJ7UOxiQQ') #for public data (user is able to change data)
+  
+  cmd2 <- 'ssh::ssh_tunnel(ssh::ssh_connect(host = "vikasguest@badal.sser.in:22", passwd="ERpWPM0JhN"), port = 7777, target = "127.0.0.1:5432")'
+  pid2 <- sys::r_background(
+    std_out = FALSE,
+    std_err = FALSE,
+    args = c("-e", cmd2)
+  )
+  
+  concore <- dbConnect(RPostgres::Postgres(), dbname = "suafbsdb",
+                       host = '127.0.0.1',
+                       port = 7777,
+                       user = 'suafbsdbuser',
+                       pass = 'xeoEJ7UOxiQQ',
+                       options = "-c search_path=core") #static data. User is not able to change data.
+  ## contbl <- dplyr::tbl(con, "dbcountry")
+} else {
+  con <- DBI::dbConnect(SQLite(), paste0(basedir,"/Data/Permanent.db"))
+  contbl <- dplyr::tbl(con, "dbcountry")
+}
 ## In the first argument of apppath, provide the location of the shiny tool
-apppath<-file.path("~/fao2025","FBSTool_Test")
+#apppath<-file.path("~/fao2025","FBSTool_Test")
+apppath<-getwd()
 
 userauth <- readRDS(file.path(apppath, "userauth.rds"))[status==1]
 pubkey <- readRDS(file.path(apppath,"publickey.rds"))
@@ -30,9 +66,9 @@ sapply(list.files(pattern = "[.]R$", path = "R/", full.names = TRUE), source)
 tourist_activate <- TRUE
 
 # Load and process CPC codes
-all_cpc <- data.table (dbReadTable(concore, name="all_cpc"))
-all_cpc[, c("CONVERSION FACTORS\r\n(FCL-CPC)", "notes") := NULL]
-setnames(all_cpc, c("SWS CODE", "SWS DESCRIPTOR"), c("CPCCode", "Commodity"))
+all_cpc <- data.table (dbReadTable(concore, name="cpc2.1"))
+all_cpc[, c("CONVERSION.FACTORS...FCL.CPC.", "notes") := NULL]
+setnames(all_cpc, c("SWS.CODE", "SWS.DESCRIPTOR"), c("CPCCode", "Commodity"))
 
 # Fix specific CPC codes
 all_cpc[CPCCode == "21439.040000000001", CPCCode := "21439.04"]
@@ -48,7 +84,7 @@ all_cpc <- all_cpc[!duplicated(all_cpc[, "CPCCode"])]
 all_cpc_codes <- unique(all_cpc$CPCCode)
 
 # Load and process element codes
-all_elements <- data.table(readRDS("Data/Elements_All.rds"))
+all_elements <- data.table(dbReadTable(concore, name="Elements_All"))
 all_elements_to_merge <- copy(all_elements)
 
 # Filter relevant element codes
@@ -69,7 +105,7 @@ allCodes <- data.table(expand.grid(
 #function to read rds for data.table
 
 # Load and process production classification
-classification <- data.table(dbReadTable(concore, name="classification"))
+classification <- data.table(dbReadTable(concore, name="production_list_cpc"))
 classification <- classification[CPCCode == "39141", CPCCode := "39140.02"]
 setnames(classification, "Commodity", "Commodity_name")
 classification <- merge(classification, all_cpc, by = "CPCCode", all.x = TRUE)
@@ -87,8 +123,8 @@ set_hot_colwidths <- function(data) {
 }
 
 # Load country data
-#countries <- data.table(readRDS("Data/Country.rds"))
-#country_selc <- unique(countries[, Country])
+countries <- data.table(dbReadTable(concore, name="countries"))
+country_selc <- unique(countries[, Country])
 
 #fbs tree
 
@@ -102,14 +138,9 @@ setnames(nutrientEle, "new","Element")
 new_nutrient_element <- c(4008,4031, 4009,4006,4007,4001,4010,4011,4023,4012,4013,4022,4014,4021,4017,
                           4018,4029,4030,4015
 )
-nutri2bind <- nutrientEle[,c("measuredElement","Measured Element"),with= F]
-setnames(nutri2bind, c("measuredElement","Measured Element"),c("ElementCode","Element"))
+nutri2bind <- nutrientEle[,c("measuredElement","Measured.Element"),with= F]
+setnames(nutri2bind, c("measuredElement","Measured.Element"),c("ElementCode","Element"))
 all_elements <- rbind(all_elements,nutri2bind, nutrientEle[,c("ElementCode","Element"),with = F])
-
-
-
-
-
 
 css <- HTML(
   "table.dataTable tr.selected td.yellow {

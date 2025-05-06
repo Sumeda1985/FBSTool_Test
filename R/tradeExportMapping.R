@@ -24,7 +24,7 @@ tradeExportMapping <- function(input, output, session, values_exportCountryData)
   exportData[, c("HS6", "Year") := lapply(.SD, as.character), .SDcols = c("HS6", "Year")]
   exportData[, Value := as.numeric(Value)]
   
-  tradeMap <- data.table(readRDS("Data/tradeMap_2019.rds"))[!cpc == ""]
+  tradeMap <- data.table(dbReadTable(concore, name="trade_map"))[!cpc == ""]
   tradeMap[, HS6 := substr(hs, 1, 6)]
   exportMap <- tradeMap[flow == 2 & !is.na(HS6)]
   

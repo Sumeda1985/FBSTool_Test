@@ -10,7 +10,7 @@ data_Session <- data.table(long_format(data.table(value$data_sua_unbalanced )))
 data_Session <- data_Session[,Year := as.character(Year)]
 stockVarData <- data_Session[ElementCode %in% c("5071") & Year %in% c(2010: input$endyear)]
 openingStock <- data_Session[ElementCode %in% c("5113")]
-stockable_items <- readRDS("SUA-FBS Balancing/Data/utilization_table_2018.rds")[stock == 'X', cpc_code]
+stockable_items <- data.table(dbReadTable(concore, name="utilization_table"))[stock == 'X', cpc_code]
 stockVarData[, c("CountryM49","Country","ElementCode","Element", "Commodity") := NULL] 
 stock_Data_bind <- stockVarData[Year %in% as.numeric(2010: (t[1]-1))]
 setnames(stockVarData,old = c("Value", "Flag"),new = c("[5071] Stock Variation [t]", "[5071] Flag"))

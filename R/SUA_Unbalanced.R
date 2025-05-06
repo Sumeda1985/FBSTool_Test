@@ -86,7 +86,8 @@ sendSweetAlert(
 })
 
 observeEvent(input$startContinue, {
- data <- fread_rds("SUA-FBS Balancing/Data/tree.rds")
+ data <- data.table(dbReadTable(con, name="tree"))[,StatusFlag := 1]
+ data[,c("StatusFlag","LastModified"):= NULL]
  t=as.numeric(as.numeric(input$fromyear) : as.numeric(input$endyear))
  data <- data[timePointYears %in% t ]
  tree=copy(data)
@@ -129,7 +130,7 @@ observeEvent(input$commodity_tree_cell_edit, {
 
 observeEvent(input$treeSave,{
   t=as.numeric(as.numeric(input$fromyear) : as.numeric(input$endyear))
-  treeOriginal <- fread_rds("SUA-FBS Balancing/Data/tree.rds")
+  treeOriginal <- data.table(dbReadTable(con, name="tree"))[,StatusFlag := 1]
   tree <- data.table(value$data_tree)
  tree[,c("Parent Commodity","Child Commodity") := NULL]
   setnames(tree, c("CPCCode Parent","CPCCode Child","Year"),c("measuredItemParentCPC","measuredItemChildCPC",

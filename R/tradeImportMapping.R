@@ -31,7 +31,7 @@ tradeImportMapping <- function(input, output, session) {
   importData[, Value := as.numeric(Value)]
   
   # Read trade map
-  tradeMap <- data.table(readRDS("Data/tradeMap_2019.rds"))[!cpc == ""]
+  tradeMap <- data.table(dbReadTable(concore, name="trade_map"))[!cpc == ""]
   tradeMap[, HS6 := substr(hs, 1, 6)]
   tradeMap[, lenght_hs := nchar(hs)]
   

@@ -97,7 +97,7 @@ output$viewCrop <- renderDataTable({
   non_triplet <- subset(non_triplet, CPCCode %in% cpc2keep)
   
   # Remove FBS codes
-  fbscodes <- fread_rds("Data/fbsTree.rds")
+  fbscodes <- data.table(dbReadTable(concore, name="fbs_tree"))
   fbscodes <- c(unique(fbscodes$id1), unique(fbscodes$id2), 
                 unique(fbscodes$id3), unique(fbscodes$id4))
   non_triplet <- subset(non_triplet, !(CPCCode %in% fbscodes))
@@ -131,7 +131,7 @@ observeEvent(input$cropInsert, {
     cpc2keep <- c(unique(classification$CPCCode), c("01421", "01422"))
     
     # Get FBS codes to exclude
-    fbscodes <- fread_rds("Data/fbsTree.rds")
+    fbscodes <- data.table(dbReadTable(concore, name="fbs_tree"))
     fbscodes <- c(unique(fbscodes$id1), 
                   unique(fbscodes$id2), 
                   unique(fbscodes$id3), 
