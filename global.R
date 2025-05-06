@@ -25,7 +25,7 @@ sapply(list.files(pattern = "[.]R$", path = "R/", full.names = TRUE), source)
 tourist_activate <- TRUE
 
 # Load and process CPC codes
-all_cpc <- data.table(readRDS("Data/cpc2.1.rds"))
+all_cpc <- data.table (dbReadTable(concore, name="all_cpc"))
 all_cpc[, c("CONVERSION FACTORS\r\n(FCL-CPC)", "notes") := NULL]
 setnames(all_cpc, c("SWS CODE", "SWS DESCRIPTOR"), c("CPCCode", "Commodity"))
 
@@ -62,9 +62,9 @@ allCodes <- data.table(expand.grid(
   ElementCode = all_element_codes
 ))
 #function to read rds for data.table
-fread_rds <- function(path) data.table::data.table(readRDS(path))
+
 # Load and process production classification
-classification <- fread_rds("Data/production_list_cpc.rds")
+classification <- data.table(dbReadTable(concore, name="classification"))
 classification <- classification[CPCCode == "39141", CPCCode := "39140.02"]
 setnames(classification, "Commodity", "Commodity_name")
 classification <- merge(classification, all_cpc, by = "CPCCode", all.x = TRUE)
@@ -82,17 +82,14 @@ set_hot_colwidths <- function(data) {
 }
 
 # Load country data
-countries <- data.table(readRDS("Data/Country.rds"))
-country_selc <- unique(countries[, Country])
+#countries <- data.table(readRDS("Data/Country.rds"))
+#country_selc <- unique(countries[, Country])
 
 #fbs tree
 
-fbsTree <- readRDS("SUA-FBS Balancing/Data/fbsTree.rds")[
-  , .(CPCCode = as.character(item_sua_fbs), id4 = as.character(id4))
-]
-
+fbsTree <- data.table(dbReadTable(concore, name="fbs_tree"))
 #nutrient Elements
-nutrientEle <- fread_rds("Data/Nutrient Elements.rds")
+nutrientEle <- data.table(dbReadTable(concore, name="nutrientEle"))
 nutrientEle[, new := paste(Element, Unit)]
 nutrientEle[, Element := NULL]
 setnames(nutrientEle, "new","Element")
