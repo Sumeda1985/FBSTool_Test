@@ -1,45 +1,4 @@
 # Required libraries
-library(RSQLite)
-library(DBI)
-library(data.table)
-library(readxl)
-library(sodium)
-
-production <- TRUE
-
-if (production == TRUE) {
-  cmd <- 'ssh::ssh_tunnel(ssh::ssh_connect(host = "vikasguest@badal.sser.in:22", passwd="ERpWPM0JhN"), port = 6666, target = "127.0.0.1:5432")'
-  pid <- sys::r_background(
-    std_out = FALSE,
-    std_err = FALSE,
-    args = c("-e", cmd)
-  )
-  
-  
-  con <- dbConnect(RPostgres::Postgres(), dbname = "suafbsdb",
-                   host = '127.0.0.1',
-                   port = 6666,
-                   user = 'suafbsdbuser',
-                   pass = 'xeoEJ7UOxiQQ') #for public data (user is able to change data)
-  
-  cmd2 <- 'ssh::ssh_tunnel(ssh::ssh_connect(host = "vikasguest@badal.sser.in:22", passwd="ERpWPM0JhN"), port = 7777, target = "127.0.0.1:5432")'
-  pid2 <- sys::r_background(
-    std_out = FALSE,
-    std_err = FALSE,
-    args = c("-e", cmd2)
-  )
-  
-  concore <- dbConnect(RPostgres::Postgres(), dbname = "suafbsdb",
-                       host = '127.0.0.1',
-                       port = 7777,
-                       user = 'suafbsdbuser',
-                       pass = 'xeoEJ7UOxiQQ',
-                       options = "-c search_path=core") #static data. User is not able to change data.
-  ## contbl <- dplyr::tbl(con, "dbcountry")
-} else {
-  con <- DBI::dbConnect(SQLite(), paste0(basedir,"/Data/Permanent.db"))
-  contbl <- dplyr::tbl(con, "dbcountry")
-}
 ## In the first argument of apppath, provide the location of the shiny tool
 #apppath<-file.path("~/fao2025","FBSTool_Test")
 apppath<-getwd()
