@@ -4,37 +4,50 @@ shinyServer <- function(input, output, session) {
   options(shiny.maxRequestSize = 30 * 1024^2)
   # Update country selection
 
-    observeEvent(input$authkey, {
-        if(input$authkey %in% userauth$authkey) {
-        output$selectcountryyear <- renderUI({
-            box(title = "Select Country and Year Range",
-                width = 12,
-                status = "primary",
-                solidHeader = TRUE,
-                collapsible = TRUE,
-                selectInput(
-                    inputId = "countrym49",
-                    label = "Country",
-                    width = "400px",
-                    choices = c("", country_selc[country_selc==userauth[authkey == input$authkey,country]])
-                ),
-                textInput(inputId="fromyear", label="From",width = "400px"),
-                textInput(inputId="endyear", label="To",width = "400px")
-              , br(),
-                column(3,
-                       div(style="display:inline-block",
-                           actionGroupButtons(
-                               inputIds =c("startContinue"),
-                               labels=list(tags$span(icon("success"), "Start Compilation")),
-                               status = "success", direction = "vertical"
-                           )
-                           )),br(), br(),br()
-                )
 
+    observeEvent(input$authenticate, {
+        req(input$useremail)
+        req(input$authkey)
+        selectcountry <- NA
+        for (i in userauth[user==input$useremail, authkey]) {
+            if(tryCatch({sig_verify(charToRaw(input$authkey), charToRaw(i),
+                                    pubkey)},
+                        error=function(e){
+                            FALSE
+                        }) == TRUE) {
+                selectcountry <- userauth[user== input$useremail & authkey == i,
+                                          country]
+            }
+        }
+        if (!is.na(selectcountry)) {
+            output$selectcountryyear <- renderUI({
+                box(title = "Select Country and Year Range",
+                    width = 12,
+                    status = "primary",
+                    solidHeader = TRUE,
+                    collapsible = TRUE,
+                    selectInput(
+                        inputId = "countrym49",
+                        label = "Country",
+                        width = "400px",
+                        choices = c("", country_selc[country_selc==selectcountry])
+                    ),
+                    textInput(inputId="fromyear", label="From",width = "400px"),
+                    textInput(inputId="endyear", label="To",width = "400px")
+                  , br(),
+                    column(3,
+                           div(style="display:inline-block",
+                               actionGroupButtons(
+                                   inputIds =c("startContinue"),
+                                   labels=list(tags$span(icon("success"), "Start Compilation")),
+                                   status = "success", direction = "vertical"
+                               )
+                               )),br(), br(),br()
+                    )
         })
         } else {
             output$selectcountryyear <-
-                renderUI(tags$label("Please enter a valid authentication key"))
+                renderUI(tags$label("Authentication details do not match. Please provide correct email address and authentication key"))
         }
     })
  reactive({
