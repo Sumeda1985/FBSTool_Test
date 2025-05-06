@@ -5,10 +5,15 @@ library(data.table)
 library(readxl)
 
 
-userauth <- readRDS("userauth.rds")
+## In the first argument of apppath, provide the location of the shiny tool
+apppath<-file.path("~/fao2025","FBSTool_Test")
+
+userauth <- readRDS(file.path(apppath, "userauth.rds"))[status==1]
+pubkey <- readRDS(file.path(apppath,"publickey.rds"))
+
 # Initialize reactive values
 rv <- reactiveValues()
-#In case to overwrite the database. database is the SUA Balanced 
+#In case to overwrite the database. database is the SUA Balanced
 #database <- get(load("countrySUA.RData"))
 #database[,StatusFlag :=  1 ]
 #database[,LastModified := as.numeric(Sys.time())]
