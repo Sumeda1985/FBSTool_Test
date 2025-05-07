@@ -139,7 +139,7 @@ rollavg <- function(x, order = 3) {
 
 #####################################  TREE #################################
 dbg_print("download tree")
-tree <- readRDS("SUA-FBS Balancing/Data/tree.rds")[timePointYears %in% c(2010:input$endyear)]
+tree <- data.table(dbReadTable(concore, name="tree"))[timePointYears %in% c(2010:input$endyear)]
 #when pulling data to tool, fill extraction rate function is ran. so no need to rerun again. 
 if (COUNTRY == "835"){
   tree[, geographicAreaM49 := as.character(835)]
@@ -163,19 +163,20 @@ tree[,
             "measuredElementSuaFbs", "measuredItemChildCPC")
 ]
 # XXX Check if this one is still good or it can be obtained within the dataset
-processed_item_datatable <- fread_rds("SUA-FBS Balancing/Data/processed_item_datatable.rds")
+processed_item_datatable <- data.table(dbReadTable(concore,"processed_item_datatable"))
 processedCPC <- processed_item_datatable[, measured_item_cpc]
 # XXX what is this for?
-itemMap <- readRDS("SUA-FBS Balancing/Data/itemMap.rds")
+itemMap <- data.table(dbReadTable(concore, name="item_map"))
 itemMap <- itemMap[, list(measuredItemSuaFbs = code, type)]
 ##################################### / TREE ################################
-coproduct_table <- readRDS("SUA-FBS Balancing/Data/zeroweight_coproducts.rds")
+coproduct_table <- data.table(dbReadTable(concore, name="zeroweight_coproducts"))
 elemKeys <- c("5510", "5610", "5071", "5113", "5910", "5016",
               "5165", "5520", "5525", "5164", "5166", "5141")
-Utilization_Table <- readRDS("SUA-FBS Balancing/Data/utilization_table_2018.rds")
+
+Utilization_Table <- data.table(dbReadTable(concore, name="utilization_table"))
 stockable_items <- Utilization_Table[stock == 'X', cpc_code]
-zeroWeight <- readRDS("SUA-FBS Balancing/Data/zeroWeight.rds")$x
-flagValidTable=readRDS("SUA-FBS Balancing/Data/flagValidTable.rds")
+zeroWeight <- data.table(dbReadTable(concore, "zero_weight"))$x
+flagValidTable= data.table(dbReadTable(concore, "flagValidTable"))
 flagValidTable[, flagObservationStatus := as.factor(flagObservationStatus)]
 dbg_print("download data")
 data_2010 <- data.table(dbReadTable(con, "dbcountry"))

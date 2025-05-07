@@ -49,7 +49,7 @@ else {
   element_levels <- c("5113", "5510", "5610", "5910", "5071", "5141", "5023", "5525", "5520", "5016", "5165", "5166")
   # Order data by CPCCode, ElementCode (with specified levels), then by id4
   dataSUA <-dataSUA[order(CPCCode, factor(ElementCode, levels = element_levels))]
-  dataSUA <-dataSUA[order(id4)][, id4 := NULL]
+  dataSUA <-dataSUA[order(id4)][, c("id1","id2","id3","id4") := NULL]
 }
 validate(
     need(!is.null(dataSUA), "No data")
