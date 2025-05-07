@@ -10,7 +10,8 @@ observeEvent(input$undoFeedratio, {
   value$data_feed_ratio <- new_version
 })
 observeEvent(input$startContinue,{
-  feed_ratios<- fread_rds("Data/feedRatio.rds")
+  value$feedRatioLong<- data.table(dbReadTable(con,"feed_ratios"))
+  feed_ratios <- wide_format(value$feedRatioLong)
   feed_ratios <- visualize_data(feed_ratios,input, session)
   feed_ratios[, hidden := ifelse(CPCCode != shift(CPCCode, type = "lead"), 1, 0)]
   value$data_feed_ratio <- feed_ratios
@@ -63,12 +64,23 @@ observeEvent(input$FeedRatioInsert, {
 #delete rows in crop table
 
 observeEvent(input$delete_btn_feed_ratio, {
-  t = copy(value$data_feed_ratio)
-  if (!is.null(input$feed_ratio_rows_selected)) {
-    t <- t[-as.numeric(input$feed_ratio_rows_selected),]
-  }
-  value$data_feed_ratio<- t
-  Add_table_version("feed_ratio", copy(value$data_feed_ratio))  
+  # Create record of dropped data
+  dropfeedRatiodata <- value$data_feed_ratio[
+    as.numeric(input$feed_ratio_rows_selected),
+    .(
+      CountryM49 = countrycode(input$countrym49, origin = 'country.name', destination = 'un'),
+      Country = input$countrym49,
+      CPCCode,
+      ElementCode = c("R5520"),
+      StatusFlag = 0
+    )
+  ]
+  # Update dropped data record and remove from main table
+  value$dropdata <- rbind(value$dropdata, dropfeedRatiodata)
+  value$data_feed_ratio <- value$data_feed_ratio[!(CPCCode %in% value$data_feed_ratio[
+    as.numeric(input$feed_ratio_rows_selected), unique(CPCCode)
+  ])]
+  Add_table_version("feed_ratio", copy(value$data_feed_ratio)) 
 })
 
 #download excle file 
@@ -159,8 +171,22 @@ observeEvent(input$feed_imputation_ratio,{
 })
 
 observeEvent(input$saveFeedratio,{
-  data_to_save <- value$data_feed_ratio
-  saveRDS(data_to_save,"Data/feedRatio.rds")
+  # Prepare data for saving
+  data_to_save <- copy(value$data_feed_ratio)
+  data_to_save[, hidden := NULL]
+  data_to_save <- data_to_save[ElementCode %in% c("R5520")]
+  # Save to database
+  save_to_database(
+    data = data_to_save,
+    longData = value$feedRatioLong ,
+    year_range = c(input$fromyear:input$endyear),
+    session = session,
+    input = input,
+    table= tbl(con, "feed_ratios"),
+    output = output,
+    data_session = value$data_feed_ratio
+  )
+  
 })
 output$feed_ratio <-
   renderDataTable({

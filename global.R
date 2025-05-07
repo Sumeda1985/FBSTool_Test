@@ -22,8 +22,8 @@ rv <- reactiveValues()
 #dbWriteTable(con, name="dbcountry", value=database, append = TRUE)
 
 # Database connection
-con <- DBI::dbConnect(SQLite(), "Data/Permanent.db")
-contbl <- dplyr::tbl(con, "dbcountry")
+#con <- DBI::dbConnect(SQLite(), "Data/Permanent.db")
+#contbl <- dplyr::tbl(con, "dbcountry")
 
 # Source all R functions
 sapply(list.files(pattern = "[.]R$", path = "R/", full.names = TRUE), source)
@@ -95,6 +95,7 @@ country_selc <- unique(countries[, Country])
 #fbs tree
 
 fbsTree <- data.table(dbReadTable(concore, name="fbs_tree"))
+setnames(fbsTree,"item_sua_fbs","CPCCode")
 #nutrient Elements
 nutrientEle <- data.table(dbReadTable(concore, name="nutrientEle"))
 nutrientEle[, new := paste(Element, Unit)]

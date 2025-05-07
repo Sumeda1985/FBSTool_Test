@@ -205,6 +205,7 @@ observeEvent(input$saveLoss, {
     year_range = c(input$fromyear:input$endyear),
     session = session,
     input = input,
+    table = tbl(con, "dbcountry"),
     output = output,
     data_session = value$data_loss
   )

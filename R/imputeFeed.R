@@ -13,7 +13,7 @@ data_Session <- data.table(value$data_sua_unbalanced )
 data_Session <- long_format(data_Session)
 write.csv(data_Session,"data_Session.csv",row.names = F)
 if (unique(value_database$data$CountryM49) %in% "835"){
-    itemFeed <- data.table(read_excel("Data/feedRatio.xlsx"))
+    itemFeed <- data.table(dbReadTable(con,"feed_ratios"))
     itemFeed=unique(itemFeed[,c("CPCCode", "Commodity")])
     itemFeed_session=subset(data_Session, ElementCode == "5520")
     itemFeed_session <- unique(itemFeed_session[,c("CPCCode","Commodity")])
@@ -23,14 +23,13 @@ if (unique(value_database$data$CountryM49) %in% "835"){
   }else {
     itemFeed_session=subset(data_Session, ElementCode == "5520")
     itemFeed_session <- unique(itemFeed_session[,c("CPCCode","Commodity")])
-    itemFeed <- data.table(fread_rds("Data/feedRatio.rds"))
+    itemFeed <- data.table(dbReadTable(con,"feed_ratios"))
     itemFeed=unique(itemFeed[,c("CPCCode", "Commodity")])
     itemFeed <- rbind(itemFeed,itemFeed_session)
     itemFeed <-itemFeed[!duplicated(itemFeed[,"CPCCode"])]
   }
 # pull feed ratios
-ratios <- fread_rds("Data/feedRatio.rds")
-ratios <- long_format(ratios)
+ratios <- data.table(dbReadTable(con,"feed_ratios"))[,c("StatusFlag","LastModified") := NULL]
 ratios$Flag =ifelse(!is.na(ratios$Value) & is.na(ratios$Flag), "", ratios$Flag)
 setnames(ratios,"Flag","[Ratio] Flag")
 ratios[,c("ElementCode", "Element")] <- NULL  

@@ -10,7 +10,8 @@ seedRates <- function (input,output,session){
 })
   
 observeEvent(input$startContinue,{
-    seed_ratios<- fread_rds("Data/seedRate.rds")
+    value$seedRatioLong<- data.table(dbReadTable(con,"seed_rates"))
+    seed_ratios <- wide_format(value$seedRatioLong)
     seed_ratios <- visualize_data(seed_ratios,input, session)
     seed_ratios[, hidden := ifelse(CPCCode != shift(CPCCode, type = "lead"), 1, 0)]
     value$data_seed_ratio <- seed_ratios
@@ -62,12 +63,23 @@ observeEvent(input$SeedRatioInsert, {
 })
   
 observeEvent(input$delete_btn_seed_ratio, {
-    t = copy(value$data_seed_ratio)
-    if (!is.null(input$seed_ratio_rows_selected)) {
-      t <- t[-as.numeric(input$seed_ratio_rows_selected),]
-    }
-    value$data_seed_ratio<- t
-    Add_table_version("seed_ratio", copy( value$data_seed_ratio))
+  # Create record of dropped data
+  dropseedRatiodata <- value$data_seed_ratio[
+    as.numeric(input$seed_ratio_rows_selected),
+    .(
+      CountryM49 = countrycode(input$countrym49, origin = 'country.name', destination = 'un'),
+      Country = input$countrym49,
+      CPCCode,
+      ElementCode = c("R5525"),
+      StatusFlag = 0
+    )
+  ]
+  # Update dropped data record and remove from main table
+  value$dropdata <- rbind(value$dropdata, dropseedRatiodata)
+  value$data_seed_ratio <- value$data_seed_ratio[!(CPCCode %in% value$data_seed_ratio[
+    as.numeric(input$seed_ratio_rows_selected), unique(CPCCode)
+  ])]
+  Add_table_version("seed_ratio", copy(value$data_seed_ratio)) 
 })
   
 #download excle file 
@@ -155,8 +167,21 @@ output$SeedratioCountry <- renderDataTable({
  })
   
  observeEvent(input$saveSeedratio,{
-    data_to_save <- value$data_seed_ratio
-    saveRDS(data_to_save,"Data/seedRate.rds")
+   # Prepare data for saving
+   data_to_save <- copy(value$data_seed_ratio)
+   data_to_save[, hidden := NULL]
+   data_to_save <- data_to_save[ElementCode %in% c("R5525")]
+   # Save to database
+   save_to_database(
+     data = data_to_save,
+     longData = value$seedRatioLong ,
+     year_range = c(input$fromyear:input$endyear),
+     session = session,
+     input = input,
+     table= tbl(con, "seed_rates"),
+     output = output,
+     data_session = value$data_seed_ratio
+   )
     
   })
   

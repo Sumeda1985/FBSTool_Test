@@ -15,7 +15,7 @@ setnames(seedData, c("Value", "Flag"), c("[5525] Seed [t]", "[5525] Flag"))
 seedData[, c("ElementCode","Element"):= NULL]
 seedData$`[5525] Flag` =ifelse(!is.na(seedData$`[5525] Seed [t]`) & is.na(seedData$`[5525] Flag`), "", seedData$`[5525] Flag`)
 if (unique(value_database$data$CountryM49) %in% "835"){
-      itemSeed <- fread_rds("Data/seedRate.rds")
+      itemSeed <- data.table(dbReadTable(con,"seed_rates"))[,c("CountryM49","Country","StatusFlag","LastModified"):= NULL]
       itemSeed=unique(itemSeed[,c("CPCCode", "Commodity")])
       itemSeed_session=subset(data_Session, ElementCode == "5525")
       itemSeed_session <- unique(itemSeed_session[,c("CPCCode","Commodity")])
@@ -24,7 +24,7 @@ if (unique(value_database$data$CountryM49) %in% "835"){
    }else {
       itemSeed_session=subset(data_Session, ElementCode == "5525")
       itemSeed_session <- unique(itemSeed_session[,c("CPCCode","Commodity")])
-      itemSeed <- fread_rds("Data/seedRate.rds")
+      itemSeed <- data.table(dbReadTable(con,"seed_rates"))[,c("CountryM49","Country","StatusFlag","LastModified"):= NULL]
       itemSeed=unique(itemSeed[,c("CPCCode", "Commodity")])
       itemSeed <- rbind(itemSeed,itemSeed_session)
       itemSeed <-itemSeed[!duplicated(itemSeed[,c("CPCCode")])]
@@ -58,7 +58,8 @@ areaSownData[Protected_5025 == FALSE, `[5025] Area Sown [ha]` := NA]
 areaSownData$`[5025] Flag` =ifelse(is.na(areaSownData$`[5025] Area Sown [ha]`) & !is.na(areaSownData$`[5025] Flag`), NA, areaSownData$`[5025] Flag`)
 areaSownData[,c("ElementCode","Element") := NULL]   
 imputeData <- copy(seedData)
-seedRates <- fread_rds("Data/seedRate.rds")
+seedRates <- data.table(dbReadTable(con,"seed_rates"))[,c("CountryM49","Country","StatusFlag","LastModified"):= NULL]
+seedRates <- wide_format(seedRates)
 seedRates[,c("ElementCode","Element") := NULL]
 seedRates <- subset(seedRates, select= c("CPCCode","Commodity",j,paste("Flag", j)))
 setnames(seedRates, c(j, paste("Flag", j)), c("Seed Rate [Kg/ha]", "[Seed Rate] Flag"))

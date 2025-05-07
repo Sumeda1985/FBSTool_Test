@@ -11,7 +11,8 @@ lossRatio <-function(input,output,session){
 })
 
 observeEvent(input$startContinue,{
-  value$data_loss_ratio<- fread_rds("Data/lossRatio.rds")
+  value$lossRatioLong <- data.table(dbReadTable(con, "loss_ratios"))
+  value$data_loss_ratio <- wide_format(value$lossRatioLong)
   value$data_loss_ratio <- visualize_data(value$data_loss_ratio,input, session)
   value$data_loss_ratio[, hidden := ifelse(CPCCode != shift(CPCCode, type = "lead"), 1, 0)]
   Add_table_version("loss_ratio", copy(value$data_loss_ratio)) 
@@ -65,14 +66,25 @@ observeEvent(input$LossRatioInsert, {
 
 #delete rows in crop table
 observeEvent(input$delete_btn_loss_ratio, {
-  t = copy(value$data_loss_ratio)
-  if (!is.null(input$loss_ratio_rows_selected)) {
-    t <- t[-as.numeric(input$loss_ratio_rows_selected),]
-  }
-  value$data_loss_ratio<- t
+  # Create record of dropped data
+  droplossRatiodata <- value$data_loss_ratio[
+    as.numeric(input$loss_ratio_rows_selected),
+    .(
+      CountryM49 = countrycode(input$countrym49, origin = 'country.name', destination = 'un'),
+      Country = input$countrym49,
+      CPCCode,
+      ElementCode = c("R5016"),
+      StatusFlag = 0
+    )
+  ]
+  # Update dropped data record and remove from main table
+  value$dropdata <- rbind(value$dropdata, droplossRatiodata)
+  value$data_loss_ratio <- value$data_loss_ratio[!(CPCCode %in% value$data_loss_ratio[
+    as.numeric(input$loss_ratio_rows_selected), unique(CPCCode)
+  ])]
   Add_table_version("loss_ratio", copy(value$data_loss_ratio)) 
-  
 })
+
 
 #download excle file 
 output$downloadLossRatio  <- createDownloadHandler(reactive(value$data_loss_ratio), 
@@ -163,8 +175,21 @@ observeEvent(input$uploadLossratio, {
   
 })
 observeEvent(input$saveLossratio,{
-  data_to_save <- value$data_loss_ratio
-  saveRDS(data_to_save,"Data/lossRatio.rds")
+  # Prepare data for saving
+  data_to_save <- copy(value$data_loss_ratio)
+  data_to_save[, hidden := NULL]
+  data_to_save <- data_to_save[ElementCode %in% c("R5016")]
+  # Save to database
+  save_to_database(
+    data = data_to_save,
+    longData = value$lossRatioLong ,
+    year_range = c(input$fromyear:input$endyear),
+    session = session,
+    input = input,
+    table= tbl(con, "loss_ratios"),
+    output = output,
+    data_session = value$data_loss_ratio
+  )
 })
 
 observeEvent(input$loss_imputation_ratio,{

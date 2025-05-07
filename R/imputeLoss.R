@@ -9,7 +9,7 @@ imputeLoss=function(input,output,session){
  data_Session <- data.table(value$data_sua_unbalanced )
  data_Session <- long_format(data_Session)
 if (unique(value_database$data$CountryM49) %in% "835"){
-    itemLoss <- fread_rds("Data/lossRatio.rds")
+    itemLoss <- data.table(dbReadTable(con, "loss_ratios"))
     itemLoss=unique(itemLoss[,c("CPCCode")])
     itemLoss_session=data_Session[ElementCode == "5016"]
     itemLoss_session <- unique(itemLoss_session[,c("CPCCode")])
@@ -19,7 +19,7 @@ if (unique(value_database$data$CountryM49) %in% "835"){
   }else {
     itemLoss_session=data_Session[ElementCode == "5016"]
     itemLoss_session <- unique(itemLoss_session[,c("CPCCode")])
-    itemLoss <- fread_rds("Data/lossRatio.rds")
+    itemLoss <- data.table(dbReadTable(con, "loss_ratios"))
     itemLoss <- unique(itemLoss[,c("CPCCode")])
     itemLoss <- rbind(itemLoss,itemLoss_session)
     itemLoss <-itemLoss[!duplicated(itemLoss)]
@@ -60,8 +60,7 @@ lossData[, `[5016] Flag` := fifelse(
     `[5510] Production [t]` = as.numeric(`[5510] Production [t]`)
   )]
 #pull loss  ratio
-ratios <-  fread_rds("Data/lossRatio.rds")
-ratios <- long_format(ratios)
+ratios <-  data.table(dbReadTable(con, "loss_ratios"))
 ratios$Flag =ifelse(!is.na(ratios$Value) & is.na(ratios$Flag), "", ratios$Flag)
 setnames(ratios,"Flag","[Ratio] Flag")
 ratios[, c("ElementCode", "Element") := NULL]

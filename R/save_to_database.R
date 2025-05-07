@@ -15,7 +15,7 @@
 #' @importFrom dplyr rows_update
 #' @importFrom dplyr rows_delete
 #' @importFrom dplyr rows_insert
-save_to_database <- function(data,longData, year_range, session, input, output,data_session) {
+save_to_database <- function(data,table,longData, year_range, session, input, output,data_session) {
  # Convert data to long format and prepare columns
   data <- long_format(data)
   data[, c("Commodity", "Element") := NULL]
@@ -68,7 +68,7 @@ save_to_database <- function(data,longData, year_range, session, input, output,d
   
   # Update existing records
   rows_update(
-    contbl,
+    table,
     as_tibble(new_data),
     by = c("CountryM49",
            "CPCCode",
@@ -82,7 +82,7 @@ save_to_database <- function(data,longData, year_range, session, input, output,d
 # Handle deletions
   if (!is.null(nrow(value$dropdata))) {
   rows_delete(
-      contbl,
+    table,
       as_tibble(value$dropdata),
       by = c("CountryM49", "Country",
              "CPCCode", "ElementCode"),
@@ -102,7 +102,7 @@ save_to_database <- function(data,longData, year_range, session, input, output,d
       data_session[CPCCode %in% unique(value$insertdata$CPCCode) &
                      ElementCode %in% (value$insertdata$ElementCode)]
     )
-    insertData[, `:=`(
+ insertData[, `:=`(
       CountryM49 = as.character(
         countrycode(input$countrym49,
                     origin = "country.name",
@@ -112,10 +112,9 @@ save_to_database <- function(data,longData, year_range, session, input, output,d
       StatusFlag = 1,
       LastModified = as.numeric(Sys.time())
     )]
-    
     # Insert new records
     rows_insert(
-      contbl,
+      table1,
       as_tibble(insertData),
       by = c("CountryM49",
              "CPCCode",
