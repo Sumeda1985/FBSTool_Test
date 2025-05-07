@@ -114,7 +114,7 @@ save_to_database <- function(data,table,longData, year_range, session, input, ou
     )]
     # Insert new records
     rows_insert(
-      table1,
+      table,
       as_tibble(insertData),
       by = c("CountryM49",
              "CPCCode",
