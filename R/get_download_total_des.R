@@ -1,9 +1,10 @@
 get_download_total_des <- function(by = 'level',input,session) {
   fbs_all_levels <- data.table(value$data_des)
+  #write.csv(fbs_all_levels,"fbs_all_levels.csv",row.names = F)
   fbs_all_levels[,hidden := NULL]
   fbs_all_levels[,`FBS Code` := as.character(`FBS Code`)]
   fbs_all_levels[,ElementCode := as.character(ElementCode)]
-  fbsTree <- fread_rds("SUA-FBS Balancing/Data/fbsTree.rds")
+  fbsTree <- data.table(dbReadTable(concore, "fbs_tree"))
   fbs_last_level <- copy(fbs_all_levels)
   
   fbs_1_level <- fbs_last_level[`FBS Code` %in% unique(fbsTree$id1)]
@@ -12,7 +13,8 @@ get_download_total_des <- function(by = 'level',input,session) {
   fbs_4_level <- fbs_last_level[`FBS Code` %in% unique(fbsTree$id4)]
   fbs_fish    <- fbs_last_level[`FBS Code` %in% c("2960")]
   
-  des_commodity <- fread_rds("SUA-FBS Balancing/Data/sua_balanced.rds")
+  des_commodity <- value$sua_balanced_plugin
+  #write.csv(des_commodity,"des_commodity.csv",row.names = F)
   #des_commodity <- des_commodity[measuredElementSuaFbs %in% c("664","674","684","261","271","281","665")]
   # des_commodity <- des_commodity[timePointYears %in% c(as.numeric(input$startYear):as.numeric(input$endYear))]
   des_commodity[, c("geographicAreaM49","flagObservationStatus") := NULL]
@@ -105,7 +107,7 @@ get_download_total_des <- function(by = 'level',input,session) {
       )
     }
   } else {
-    for(year in as.numeric(as.numeric(input$fromyear) : as.numeric(input$endyear))) {
+    for(year in as.numeric(as.numeric(2020) : as.numeric(2022))) {
       data_sheet = Prepare_data_des_report(
         year = year,
         fbs1 = fbs_1_level,
@@ -114,8 +116,8 @@ get_download_total_des <- function(by = 'level',input,session) {
         fbs_tree = fbsTree,
         sua_balanced = value$data_sua_balanced_with_nut,
         fbs_balanced = value$data_fbs_balanced,
-        population_data = fread_rds("SUA-FBS Balancing/Data/popSWS.rds"),
-        elements = fread_rds('data/elements.rds'),
+        population_data = data.table(dbReadTable(con, "pop_sws"))[StatusFlag== 1][,c("StatusFlag","LastModified") := NULL],
+        elements = data.table(dbReadTable(concore, "elements")),
         country = value_database$data$Country[1]
       )
       

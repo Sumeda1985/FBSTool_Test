@@ -41,7 +41,7 @@ p$protected <- "Protected"
 p$official <- "Official"
 # shareDownUp_file <-
 #   file.path(R_SWS_SHARE_PATH, USER, paste0("shareDownUp_", COUNTRY, ".csv"))
-TourismNoIndustrial <- fread_rds("SUA-FBS Balancing/Data/TourismNoIndustrial.rds")
+TourismNoIndustrial <- data.table(dbReadTable(concore, "TourismNoIndustrial"))
 dbg_print("define functions")
 
 dt_left_join <- function(x, y, by = NA, allow.cartesian = FALSE,
@@ -658,7 +658,8 @@ dbg_print("end functions")
 #####################################  TREE #################################
 
 dbg_print("download tree")
-tree <- fread_rds("SUA-FBS Balancing/Data/tree.rds")
+tree <- data.table(dbReadTable(con, name="tree"))[,StatusFlag := 1]
+tree[,c("StatusFlag","LastModified"):= NULL]
 tree <- subset(tree, timePointYears %in% c(2014:input$endyear) )
 if (COUNTRY == "835"){
   tree[, geographicAreaM49 := as.character(835)]
@@ -749,18 +750,23 @@ tree[,
             "measuredElementSuaFbs", "measuredItemChildCPC")
      ]
 # XXX Check if this one is still good or it can be obtained within the dataset
-processed_item_datatable <- fread_rds("SUA-FBS Balancing/Data/processed_item_datatable.rds")
+#processed_item_datatable <- fread_rds("SUA-FBS Balancing/Data/processed_item_datatable.rds")
+processed_item_datatable <- data.table(dbReadTable(concore, "processed_item_datatable"))
 processedCPC <- processed_item_datatable[, measured_item_cpc]
 # XXX what is this for?
-itemMap <- fread_rds("SUA-FBS Balancing/Data/itemMap.rds")
+#itemMap <- fread_rds("SUA-FBS Balancing/Data/itemMap.rds")
+itemMap <- data.table(dbReadTable(concore, "item_map"))
 itemMap <- itemMap[, list(measuredItemSuaFbs = code, type)]
 
 ##################################### / TREE ################################
-coproduct_table <- fread_rds("SUA-FBS Balancing/Data/zeroweight_coproducts.rds")
+#coproduct_table <- fread_rds("SUA-FBS Balancing/Data/zeroweight_coproducts.rds")
+coproduct_table <- data.table(dbReadTable(concore, "zeroweight_coproducts"))
 ############################ POPULATION #####################################
 dbg_print("download population")
 
-popSWS <- fread_rds("SUA-FBS Balancing/Data/popSWS.rds")
+#popSWS <- fread_rds("SUA-FBS Balancing/Data/popSWS.rds")
+popSWS <- data.table(dbReadTable(con, "pop_sws"))[StatusFlag== 1]
+popSWS <- popSWS[,c("StatusFlag","LastModified") := NULL]
 cols_to_convert <- c("geographicAreaM49", "measuredElement", "timePointYears")
 popSWS[, (cols_to_convert) := lapply(.SD, as.character), .SDcols = cols_to_convert]
 if (COUNTRY == "835"){
@@ -801,14 +807,20 @@ elemKeys <- c("5510", "5610", "5071", "5113", "5910", "5016",
 #  food_classification_country_specific[geographic_area_m49 == COUNTRY]
 #
 #food_only_items <- food_classification_country_specific[food_classification == 'Food Residual', measured_item_cpc]
-Utilization_Table <- fread_rds("SUA-FBS Balancing/Data/utilization_table_2018.rds")
+#Utilization_Table <- fread_rds("SUA-FBS Balancing/Data/utilization_table_2018.rds")
+Utilization_Table <- data.table(dbReadTable(concore, "utilization_table"))
 stockable_items <- Utilization_Table[stock == 'X', cpc_code]
-zeroWeight <- fread_rds("SUA-FBS Balancing/Data/zeroWeight.rds")$x
+#zeroWeight <- fread_rds("SUA-FBS Balancing/Data/zeroWeight.rds")$x
+zeroWeight <- data.table(dbReadTable(concore,"zero_weight"))$x
 # flagValidTable <- ReadDatatable("valid_flags")
-flagValidTable=fread_rds("SUA-FBS Balancing/Data/flagValidTable.rds")
+#flagValidTable=fread_rds("SUA-FBS Balancing/Data/flagValidTable.rds")
+flagValidTable <- data.table(dbReadTable(concore, "flagValidTable"))
 flagValidTable[, flagObservationStatus := as.factor(flagObservationStatus)]
 
-nutrientData <-fread_rds("SUA-FBS Balancing/Data/nutrientData.rds")
+#nutrientData <-fread_rds("SUA-FBS Balancing/Data/nutrientData.rds")
+
+nutrientData <- data.table(dbReadTable(con, "nutrient_data"))[,StatusFlag :=  1 ]
+nutrientData[,c("StatusFlag","LastModified") := NULL]
 
 nutrientData[, geographicAreaM49 := as.character(geographicAreaM49)]
 nutrientData[, timePointYearsSP := as.character(timePointYearsSP)]
@@ -1836,12 +1848,9 @@ standData <- standData[timePointYears >= 2014 & !is.na(Value)]
 standData[, Protected := NULL]
 # #save only the reference year
 # standData <- standData[timePointYears %in% startYear:endYear]
-if(file.exists(paste0("SUA-FBS Balancing/Data/sua_balanced.rds"))){
-  file.remove((paste0("SUA-FBS Balancing/Data/sua_balanced.rds")))
-  saveRDS(standData,paste0("SUA-FBS Balancing/Data/sua_balanced.rds"))
-}else {
-  saveRDS(standData,paste0("SUA-FBS Balancing/Data/sua_balanced.rds"))
-}
+
+value$sua_balanced_plugin <- copy(standData)
+#dbWriteTable(concore, name="sua_balanced",  value=standData , overwrite = TRUE) #save SUA Balanced
 
 #updating opening stock, stock change and other elements in the data base of the years of compilation (t)
 standData <- standData[timePointYears %in% startYear:endYear]
@@ -1886,7 +1895,7 @@ new_data <- new_data[,c("Country","Commodity","Element") := NULL]
 new_data <- rbind(new_data,data_2010_2013)
 
 rows_update(
-  contbl,
+  tbl(con, "dbcountry"),
   as_tibble(new_data),
   by = c("CountryM49",
          "CPCCode",

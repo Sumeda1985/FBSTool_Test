@@ -1,7 +1,10 @@
 Prepare_data_des_report <- function(year, fbs1, fbs2, fbs3, fbs_tree, 
                                     sua_balanced, fbs_balanced, population_data,
                                     elements, country) {
-  year <- as.character(year)
+  
+  #write.csv(value$data_sua_balanced_with_nut,"data_sua_balanced_with_nut.csv",row.names = F)
+  #write.csv(value$data_fbs_balanced,"data_fbs_balanced.csv",row.names = F) 
+ year <- as.character(year)
   ### Data preparation for level 1, 2 and 3 of the Food balance sheet
   # List ID4 for each FBS group
   fbs_child <- rbind(
@@ -25,6 +28,7 @@ Prepare_data_des_report <- function(year, fbs1, fbs2, fbs3, fbs_tree,
     rename(value = sym(year)) %>%
     filter(FBSCode %in% fbs_child$parent) %>%
     dplyr::select(FBSCode, ElementCode, value) %>%
+    mutate(FBSCode = as.character(FBSCode))%>%
     complete(FBSCode = unique(fbs_child$parent), 
              ElementCode = unique(fbs_balanced$ElementCode),
              fill = list(value = 0))
@@ -59,6 +63,7 @@ Prepare_data_des_report <- function(year, fbs1, fbs2, fbs3, fbs_tree,
   data_commodity <- sua_balanced %>% 
     rename(value = sym(year),
            child = `FBS Code`) %>%
+    mutate(child = as.character(child))%>%
     left_join(fbs_tree %>% 
                 dplyr::select(id3, id4) %>%
                 rename(child = id4,

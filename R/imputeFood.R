@@ -8,7 +8,7 @@ show_modal_spinner(
 t=as.numeric(as.numeric(input$fromyear) : as.numeric(input$endyear))
 data_Session <- data.table(value$data_sua_unbalanced )
 data_Session <- long_format(data_Session)
-Utilization_Table <- fread_rds("SUA-FBS Balancing/Data/utilization_table_2018.rds")
+Utilization_Table <- data.table(dbReadTable(concore, "utilization_table"))
 itemFood <- unique(Utilization_Table[food_item == "X"]$cpc_code)
 itemFood_session <- unique(data_Session[ElementCode == "5141"]$CPCCode)
 itemFood <- unique( c(itemFood,itemFood_session))
@@ -87,7 +87,8 @@ foodData[,c("ElementCode","Element", "Commodity"):=NULL]
 #Assign flag NA for vlaues NA
 foodData$Flag =ifelse(is.na(foodData$Value) & foodData$Flag == "", NA, foodData$Flag)
 #Merge the food Type
-foodType <- fread_rds("Data/foodCommodityList.rds")
+foodType <- data.table(dbReadTable(con,"food_classification"))[StatusFlag ==  1][,c("StatusFlag","LastModified") := NULL]
+#foodType <- fread_rds("Data/foodCommodityList.rds")
 foodType <-  foodType[, Commodity := NULL]
 foodType <- foodType[!is.na(Type)]
 data = merge(data,foodData,by = c("CPCCode","Year"),all = TRUE)
@@ -95,16 +96,22 @@ data = merge(data, foodType, by = "CPCCode", all.x = TRUE)
 data = subset(data, CPCCode %in% itemFood)
 setnames(data, c("Value", "Flag"), c("[5141] Food [t]", "[5141] Flag"))
 # pull fdmData
-fdmData = fread_rds("Data/fdmData.rds")
+fdmData = data.table(dbReadTable(concore, "food_demand"))
+setnames(fdmData,c("Food.Demand","Food.Function"),c("Food Demand","Food Function"))
 fdmData[, Commodity := NULL]
 data <- merge(data, fdmData, by = c("CPCCode"), all.x = TRUE)
 #pull gdp data
-gdpData=fread_rds("Data/gdpData.rds")
+#gdpData=fread_rds("Data/gdpData.rds")
+gdpData <- data.table(dbReadTable(con, "gdpData"))[StatusFlag ==  1 ]
+gdpData[,c("StatusFlag","LastModified", "CountryM49","Country") := NULL]
 data[, Year := as.character(Year)]
 gdpData[, Year := as.character(Year)]
+setnames(gdpData,"GDP.per.capita..constant.2015.US..","GDP per capita [constant 2015 US$]")
 data = merge(data,gdpData,by = c("Year"),all.x = TRUE)
 #pull population data  
-popData <- fread_rds("SUA-FBS Balancing/Data/popSWS.rds")
+#popData <- fread_rds("SUA-FBS Balancing/Data/popSWS.rds")
+popData <- data.table(dbReadTable(con,"pop_sws"))[StatusFlag ==  1 ]
+popData[,c("StatusFlag","LastModified") := NULL]
 popData <- popData[,c("timePointYears","Value")]
 setnames(popData, names(popData),c("Year", "Population [1000]"))
 popData <- popData[Year %in% c(2010:t[length(t)])]

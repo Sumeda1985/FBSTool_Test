@@ -144,12 +144,12 @@ shinyServer <- function(input, output, session) {
   feed <- feed(input,output,session)
   feedRatio <- feedRatio(input,output,session)
   seed <- seed(input,output,session)
-  seedRates <- seedRates(input,output,session)
-  #industry <- industry(input,output,session)
-  #food <- food(input,output,session)
+  #seedRates <- seedRates(input,output,session)
+  industry <- industry(input,output,session)
+  food <- food(input,output,session)
   SUA_Unbalanced <- SUA_Unbalanced(input,output,session)
-  #SUA_Balanced <- SUA_Balanced(input,output,session)
-  #FBS_Balanced <- FBS_Balanced(input,output,session)
+  SUA_Balanced <- SUA_Balanced(input,output,session)
+  FBS_Balanced <- FBS_Balanced(input,output,session)
   #fbs_report <- fbs_report(input,output,session)
   #GIFT <- GIFT(input,output,session)
   #generate_self_sufficiency_tab(input,output,session)
@@ -168,8 +168,13 @@ observeEvent(input$fbs_report_button,{
     updateTabItems(session, "fao", newtab)
 })
 observeEvent(input$total_DES,{
- session$sendCustomMessage("set_active_tab", c(12, "#shiny-tab-total_des"))
+  newtab <- switch(input$fao,"fbs" = "total_des")
+  updateTabItems(session, "fao", newtab)
+  
+ #session$sendCustomMessage("set_active_tab", c(12, "#shiny-tab-total_des"))
 })
+
+
 # Year validation handlers
   observeEvent(input$fromyear, {
     if (input$fromyear != "" && nchar(input$fromyear) == 4) {

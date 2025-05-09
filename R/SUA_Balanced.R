@@ -3,12 +3,15 @@ SUA_Balanced <- function(input,output,session){
 suaBal_NU <- eventReactive(c(input$checkbox,input$gotosuaBalanced),{
 t=as.numeric(input$endyear)
 files_sua_balanced=list.files(path = "SUA-FBS Balancing/Data",pattern ="^sua_balanced")
-if (paste0("sua_balanced.rds") %in% files_sua_balanced){
-   data <- fread_rds("SUA-FBS Balancing/Data/sua_balanced.rds")
+#if (paste0("sua_balanced.rds") %in% files_sua_balanced){
+   data <- value$sua_balanced_plugin
+   data[, c("geographicAreaM49", "measuredElementSuaFbs","timePointYears") := lapply(.SD, as.character), 
+           .SDcols = c("geographicAreaM49", "measuredElementSuaFbs", "timePointYears")]
    data <- subset(data, timePointYears %in% c(2014:t))
    #Attach 2010-2013 SUA BAlanced data
-   sua_bal_2010_2013 <- fread_rds("SUA-FBS Balancing/Data/sua_bal_2010_2013.rds")[timePointYears %in% c(2010:2013)]
-   data <- rbind(data,sua_bal_2010_2013)
+   #removed as instructed by Vikas
+   #sua_bal_2010_2013 <- fread_rds("SUA-FBS Balancing/Data/sua_bal_2010_2013.rds")[timePointYears %in% c(2010:2013)]
+   #data <- rbind(data,sua_bal_2010_2013)
    #remove variables where there exists only 5166 for a particular CPC
    remove_row <- unique(data[,c("measuredItemFbsSua","measuredElementSuaFbs"),with = F])
    duplicated_Row <- remove_row[duplicated(measuredItemFbsSua)]
@@ -29,11 +32,11 @@ if (paste0("sua_balanced.rds") %in% files_sua_balanced){
     data <- data[ElementCode %in% elemKeys]
     # data[,Value := round(Value,0)]
     data <- wide_format(data)
-    fbsTree <- fread_rds("SUA-FBS Balancing/Data/fbsTree.rds")
+    fbsTree <- data.table(dbReadTable(concore,"fbs_tree"))
     fbsTree <- fbsTree[, c("item_sua_fbs","id4")]
     setnames(fbsTree, c("item_sua_fbs","id4"),c("CPCCode","FBS Code"))
     fbsTree[, fbsCode_S := paste0("S",`FBS Code`)]
-    commodityName <- fread_rds("Data/SUA_Commodities.rds")
+    commodityName <- data.table(dbReadTable(concore,"SUA_Commodities"))
     fbsTree <- merge(fbsTree,commodityName, by.x = "fbsCode_S", by.y = "CPCCode", all.x = TRUE)
     fbsTree[, fbsCode_S := NULL]
     setnames(fbsTree,"Commodity","FBS Commodity")
@@ -57,15 +60,15 @@ if (paste0("sua_balanced.rds") %in% files_sua_balanced){
         value$data_sua_balanced <- data
         data[, hidden := ifelse(CPCCode != shift(CPCCode, type = "lead"), 1, 0)] 
       }
-    }
-else {
-      sendSweetAlert(
-        session = session,
-        title = paste("Please Run the Balancing Plugin to create SUA Balanced of", t),
+    #}
+#else {
+     # sendSweetAlert(
+       # session = session,
+        #title = paste("Please Run the Balancing Plugin to create SUA Balanced of", t),
         # text = paste(elementNameMissing, collapse = ' , '),
-        type = "warning"
-      )
-  }
+        #type = "warning"
+      #)
+  #}
  })
 
 output$download_sua_balanced<- downloadHandler(
@@ -81,7 +84,9 @@ output$download_sua_balanced<- downloadHandler(
 )
 
 observeEvent(input$startContinue, {
-   data=fread_rds("SUA-FBS Balancing/Data/nutrientData.rds")
+   data <- data.table(dbReadTable(con, "nutrient_data"))[StatusFlag == 1]
+   data[, c("StatusFlag","LastModified") := NULL]
+   #data=fread_rds("SUA-FBS Balancing/Data/nutrientData.rds")
    t=as.numeric(as.numeric(input$fromyear) : as.numeric(input$endyear))
    data <- data[!duplicated(data)]
    data=data[timePointYearsSP %in% t]
@@ -114,9 +119,6 @@ output$download_nutri_table<- downloadHandler(
   }
 )
 
-
-
-
 observeEvent(input$nutrientSave,{
   t=as.numeric(as.numeric(input$fromyear) : as.numeric(input$endyear))
   nutrientOriginal <- fread_rds("SUA-FBS Balancing/Data/nutrientData.rds")
@@ -135,21 +137,12 @@ observeEvent(input$nutrientSave,{
   saveRDS(nutrient_to_save,"SUA-FBS Balancing/Data/nutrientData.rds")
   
 })
-
-
-
-
-
-
 output$nutrient_factors <- 
   renderDataTable(
     datatable(value$data_nutrient, rownames= FALSE,class = 'cell-border stripe',
               editable = list(target = "cell", disable = list(columns = c(1:4))), 
               options = list(columnDefs = list(list(width = '40px', targets = c(0,1,2,3,4,5)))))
  )
-
-
-
 
 output$sua_balanced <-
   renderDataTable({
@@ -175,13 +168,9 @@ output$sua_balanced <-
                   `border-bottom` = styleEqual(1, "solid 3px"))%>%
       formatStyle('ElementCode', target = "row", color = styleEqual(unique(suaBal_NU()$ElementCode),
                                                                     ifelse(unique(suaBal_NU()$ElementCode)%in% c('5166','664','665'),'blue','black')))%>%
-      formatCurrency(columns = as.character(c(2010:input$endyear)),currency = "", digits = 0,interval = 3, mark = ",")
+      formatCurrency(columns = as.character(c(2014:input$endyear)),currency = "", digits = 0,interval = 3, mark = ",")
 })
 
-
-  
-  
-  
-  
+ 
   
 }

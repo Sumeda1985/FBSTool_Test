@@ -42,6 +42,8 @@ value$data_food  <- new_version
 observeEvent(input$startContinue,{
     
       data <- data.table(data.table(dbReadTable(con, name="gdpData")))[!duplicated(Year)]
+      data[,c("StatusFlag","LastModified","CountryM49","Country") := NULL]
+      setnames(data, "GDP.per.capita..constant.2015.US..","GDP per capita [constant 2015 US$]")
       data[,Year:=as.character(Year)]
 if ( input$endyear > max(data$Year)){
  row <- data.table(Year = as.character(input$endyear), 'GDP per capita [constant 2015 US$]' = "")
@@ -161,6 +163,7 @@ observeEvent(input$savePopulation,{
 ###################################  Food Demand Model ###################################################
 observeEvent(input$startContinue,{
      data <- data.table(dbReadTable(concore, name= "food_demand" ))
+     setnames(data,c("Food.Demand","Food.Function"),c("Food Demand","Food Function"))
      value$data_fdm <- data
 })  
 observeEvent(input$saveFDM,{
@@ -189,7 +192,7 @@ output$food_fdm=renderRHandsontable({
 ############################  Food Classification Table #######################################################
 observeEvent(input$startContinue,{
     data <- data.table(dbReadTable(con, name="food_classification"))[!duplicated(CPCCode)]
-    value$data_classification <- data
+    value$data_classification <- data[,c("StatusFlag","LastModified") := NULL]
     Add_table_version("food_classification", copy(value$data_classification))
 })
 observeEvent(input$savefoodclassific,{

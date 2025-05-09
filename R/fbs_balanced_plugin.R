@@ -13,7 +13,8 @@ endYear = as.numeric(input$endyear)
 # geoM49 = swsContext.computationParams$geom49
 stopifnot(startYear <= endYear)
 yearVals = as.character(2014:endYear)
-tree <- fread_rds("SUA-FBS Balancing/Data/tree.rds")
+tree <- data.table(dbReadTable(con, name="tree"))[,StatusFlag := 1]
+tree[,c("StatusFlag","LastModified"):= NULL]
 tree <- tree[timePointYears %in% yearVals ]
 if (COUNTRY == "835"){
   tree[, geographicAreaM49 := as.character(835)]
@@ -402,7 +403,7 @@ NonStandardizedChidren<-function(fbsTree,tree,standParams){
 
 `%!in%` = Negate(`%in%`)
 
-shareUpDownTree <- fread_rds(paste0(basedir,"/SUA-FBS Balancing/FBS_Balanced/Data/ShareUpDownTree.rds"))
+shareUpDownTree <- data.table(dbReadTable(concore, "share_up_down_tree"))
 # carrying forward shareUPDownTree for missing years 
 years_missing_share = c()
 shareToadd = list()
@@ -418,7 +419,7 @@ for (i in c(2010:t_share)){
 if (length(years_missing_share) != 0){
   
   for (i in 1:length(years_missing_share)){
-    share2018 <- shareUpDownTree[timePointYears  == 2018]
+    share2018 <- shareUpDownTree[timePointYears  == 2019]
     shareToadd_ <- copy(share2018)[,timePointYears := years_missing_share[i]]
     shareToadd[[i]] <- shareToadd_
 }
@@ -427,7 +428,7 @@ if (length(years_missing_share) != 0){
 shareToadd <- rbindlist(shareToadd)
 shareUpDownTree <- rbind(shareUpDownTree,shareToadd)
 shareUpDownTree[!duplicated(shareUpDownTree)]
-saveRDS(shareUpDownTree,paste0(basedir,"/SUA-FBS Balancing/FBS_Balanced/Data/ShareUpDownTree.rds"))
+#saveRDS(shareUpDownTree,paste0(basedir,"/SUA-FBS Balancing/FBS_Balanced/Data/ShareUpDownTree.rds"))
 if (COUNTRY == "835"){
    shareUpDownTree[, geographicAreaM49 := as.character(835)]
 }
@@ -494,7 +495,7 @@ params$proteins = "proteins"
 params$fats = "fats"
 # message("wipe fbs_standardized session")
 
-fbs_standardized <- fread_rds(paste0(basedir,"/SUA-FBS Balancing/FBS_Balanced/Data/fbs_standardized_wipe.rds"))
+fbs_standardized <- data.table(dbReadTable(concore, "fbs_standardized_wipe"))
 if (COUNTRY == "835"){
   fbs_standardized[, geographicAreaM49 := as.character(835)]
   
@@ -503,7 +504,7 @@ if (COUNTRY == "835"){
 
 ## CLEAN fbs_balanced
 message("wipe fbs_balanced session")
-fbs_balancedData <- fread_rds(paste0(basedir,"/SUA-FBS Balancing/FBS_Balanced/Data/fbs_balancedData_wipe.rds"))
+fbs_balancedData <- data.table(dbReadTable(concore, "fbs_balanced_wipe"))
 if (COUNTRY == "835"){
   fbs_balancedData[, geographicAreaM49 := as.character(835)]
   
@@ -552,7 +553,7 @@ message("Reading SUA data...")
 #   write.csv(SuabalData,paste0(basedir,"/SUA-FBS Balancing/FBS_Balanced/Data/SuabalData.csv"),row.names = FALSE)
 # }
 
-SuabalData <- fread_rds("SUA-FBS Balancing/Data/sua_balanced.rds")
+SuabalData <- value$sua_balanced_plugin
 SuabalData <- subset(SuabalData, measuredElementSuaFbs %in% 
                        c("5113", "5510", "5610", "5071", "5910", "5520", "5525", "5016", "5023", "5165",
                          "5166", "5141",  "664",  "665",  "511", new_nutrient_element))
@@ -579,7 +580,7 @@ elementCodesToNames <- function(data, elementCol = NULL, itemCol = NULL, standPa
   }
   # elementMap = GetCodeList("agriculture", "aproduction", "measuredItemCPC")
   
-  elementMap <- fread_rds(paste0(basedir,"/SUA-FBS Balancing/FBS_Balanced/Data/elementMap.rds"))
+  elementMap <- data.table(dbReadTable(concore,"elementMap"))
   # write.csv(elementMap,paste0(basedir,"/SUA-FBS Balancing/FBS_Balanced/Data/elementMap.csv"),row.names = FALSE)
   message("Get Code List ok")
   elementMap[code == "01520.02", `:=`(type, "CRPR")]
@@ -598,7 +599,7 @@ elementCodesToNames <- function(data, elementCol = NULL, itemCol = NULL, standPa
   }
   # itemCodeKey = ReadDatatable("element_codes")
   
-  itemCodeKey <- fread_rds(paste0(basedir,"/SUA-FBS Balancing/FBS_Balanced/Data/itemCodeKey.rds"))
+  itemCodeKey <- data.table(dbReadTable(concore,"itemCodeKey"))
  # write.csv(itemCodeKey,paste0(basedir,"/SUA-FBS Balancing/FBS_Balanced/Data/itemCodeKey.csv"),row.names = FALSE)
   
   itemCodeKey[, `:=`(c("description", "factor"), NULL)]
@@ -684,11 +685,11 @@ p<-params
 #the processed quantities of their coproduct
 # coproduct_table <- ReadDatatable('zeroweight_coproducts')
 
-coproduct_table <- fread_rds("SUA-FBS Balancing/Data/zeroweight_coproducts.rds")
+coproduct_table <- data.table(dbReadTable(concore, "zeroweight_coproducts"))
 
 # zeroWeight=ReadDatatable("zero_weight")[,item_code]
 
-zeroWeight <- fread_rds("SUA-FBS Balancing/Data/zeroWeight.rds")$x
+zeroWeight <- data.table(dbReadTable(concore, "zero_weight"))$x
 
 
 stopifnot(nrow(coproduct_table) > 0)
@@ -1273,7 +1274,7 @@ data=convertSugarCodes(data)
 ##############################################################
 # flagValidTable = ReadDatatable("valid_flags")
 
-flagValidTable <- fread_rds("SUA-FBS Balancing/Data/flagValidTable.rds")
+flagValidTable <- data.table(dbReadTable(concore, "flagValidTable"))
 data=left_join(data,flagValidTable,by=c("flagObservationStatus"))%>%
   data.table
 data[flagObservationStatus%in%c("","T"),Official:=TRUE]
@@ -1324,7 +1325,7 @@ tree<-merge(
 )
 message("Download fbsTree from SWS...")
 # fbsTree=ReadDatatable("fbs_tree")
-fbsTree <- fread_rds("SUA-FBS Balancing/Data/fbsTree.rds")
+fbsTree <- data.table(dbReadTable(concore, "fbs_tree"))
 fbsTree=data.table(fbsTree)
 setnames(fbsTree,colnames(fbsTree),c( "fbsID1", "fbsID2", "fbsID3","fbsID4", "measuredItemSuaFbs"))
 setcolorder(fbsTree,c("fbsID4", "measuredItemSuaFbs", "fbsID1", "fbsID2", "fbsID3"))
@@ -1376,7 +1377,8 @@ message("Loading nutrient data...")
 #                                    timePointYears = as.character(2014:2018),
 #                                    geographicAreaM49 = COUNTRY
 # )
-nutrientData <- fread_rds("SUA-FBS Balancing/Data/nutrientData.rds")
+nutrientData <- data.table(dbReadTable(con, "nutrient_data"))[,StatusFlag :=  1 ]
+nutrientData[,c("StatusFlag","LastModified") := NULL]
 setnames(nutrientData, c("measuredItemCPC", "timePointYearsSP"),
          c("measuredItemSuaFbs", "timePointYears"))
 if (COUNTRY == "835"){
@@ -1391,7 +1393,8 @@ nutrientData[get(params$elementVar)=="664",params$elementVar:=params$calories]
 nutrientData[get(params$elementVar)=="674",params$elementVar:=params$proteins]
 nutrientData[get(params$elementVar)=="684",params$elementVar:=params$fats]
 ############################ POPULATION #####################################
-popSWS <- fread_rds("SUA-FBS Balancing/Data/popSWS.rds")
+popSWS <- data.table(dbReadTable(con, "pop_sws"))[StatusFlag== 1]
+popSWS <- popSWS[,c("StatusFlag","LastModified") := NULL]
 stopifnot(nrow(popSWS) > 0)
 popSWS[geographicAreaM49 == "156", geographicAreaM49 := "1248"]
 if (COUNTRY == "835"){
@@ -1469,11 +1472,11 @@ dataDes<-rbind(calories_per_capita,calories_per_capita_total[measuredElementSuaF
 message("Download Utilization Table from SWS...")
 #utilizationTable=ReadDatatable("utilization_table")
 # Utilization_Table <- ReadDatatable("utilization_table_2018")
-Utilization_Table <- fread_rds("SUA-FBS Balancing/Data/utilization_table_2018.rds")
+Utilization_Table <- data.table(dbReadTable(concore, "utilization_table"))
 DerivedItem <- Utilization_Table[derived == 'X', get("cpc_code")]
 message("Download zero Weight from SWS...")
 # zeroWeight=ReadDatatable("zero_weight")[,item_code]
-zeroWeight <- fread_rds("SUA-FBS Balancing/Data/zeroWeight.rds")$x
+zeroWeight <- data.table(dbReadTable(concore,"zero_weight"))$x
 message("Defining vectorized standardization function...")
 ## Split data based on the two factors we need to loop over
 uniqueLevels = data[, .N, by = c("geographicAreaM49", "timePointYears")]
@@ -1481,7 +1484,7 @@ uniqueLevels[, N := NULL]
 # parentNodes = getCommodityLevel(tree, parentColname = "measuredItemParentCPC",
 #                                 childColname = "measuredItemChildCPC")
 
-parentNodes <- fread_rds(paste0(basedir,"/SUA-FBS Balancing/FBS_Balanced/Data/parentNodes.rds"))
+parentNodes <-  data.table(dbReadTable(concore,"parent_nodes"))
 parentNodes = parentNodes[level == 0, node] 
 aggFun = function(x) {
   if (length(x) > 1)
@@ -1879,12 +1882,14 @@ foodGram_data<-foodGram_data[,list(geographicAreaM49,measuredItemFbsSua,measured
 fbs_standardized<-rbind(fbs_standardized,foodGram_data)
 message("saving FBS standardized...")
 
-if(file.exists(paste0(basedir,"/SUA-FBS Balancing/FBS_Balanced/Data/fbs_standardized_final.rds"))){
-  file.remove(paste0(basedir,"/SUA-FBS Balancing/FBS_Balanced/Data/fbs_standardized_final.rds"))
-  saveRDS(fbs_standardized,paste0(basedir,"/SUA-FBS Balancing/FBS_Balanced/Data/fbs_standardized_final.rds"))
-}else{
-saveRDS(fbs_standardized,paste0(basedir,"/SUA-FBS Balancing/FBS_Balanced/Data/fbs_standardized_final.rds"))
-}
+value$fbs_standardized_plugin <- fbs_standardized
+
+#if(file.exists(paste0(basedir,"/SUA-FBS Balancing/FBS_Balanced/Data/fbs_standardized_final.rds"))){
+  #file.remove(paste0(basedir,"/SUA-FBS Balancing/FBS_Balanced/Data/fbs_standardized_final.rds"))
+  #saveRDS(fbs_standardized,paste0(basedir,"/SUA-FBS Balancing/FBS_Balanced/Data/fbs_standardized_final.rds"))
+#}else{
+#saveRDS(fbs_standardized,paste0(basedir,"/SUA-FBS Balancing/FBS_Balanced/Data/fbs_standardized_final.rds"))
+#}
 # SaveData(domain = "suafbs", dataset = "fbs_standardized", data = fbs_standardized, waitTimeout = 20000)
 
 #end fns standardized-------------------------------------------------------------
@@ -2065,13 +2070,15 @@ foodGram_data_fb[, c("food", "population") := NULL]
 foodGram_data_fb<-foodGram_data_fb[,list(geographicAreaM49,
                                          measuredItemFbsSua,measuredElementSuaFbs,timePointYears,Value,flagObservationStatus)]
 fbs_balanced_bis<-rbind(fbs_balanced_bis,foodGram_data_fb)
-if(file.exists(paste0(basedir,"/SUA-FBS Balancing/FBS_Balanced/Data/fbs_balanced_final.rds"))){
-  file.remove(paste0(basedir,"/SUA-FBS Balancing/FBS_Balanced/Data/fbs_balanced_final.rds"))
-  saveRDS(fbs_balanced_bis,paste0(basedir,"/SUA-FBS Balancing/FBS_Balanced/Data/fbs_balanced_final.rds"))
-}else{
+value$fbs_balanced_plugin <- fbs_balanced_bis
+
+#if(file.exists(paste0(basedir,"/SUA-FBS Balancing/FBS_Balanced/Data/fbs_balanced_final.rds"))){
+ # file.remove(paste0(basedir,"/SUA-FBS Balancing/FBS_Balanced/Data/fbs_balanced_final.rds"))
+ # saveRDS(fbs_balanced_bis,paste0(basedir,"/SUA-FBS Balancing/FBS_Balanced/Data/fbs_balanced_final.rds"))
+#}else{
   
-  saveRDS(fbs_balanced_bis,paste0(basedir,"/SUA-FBS Balancing/FBS_Balanced/Data/fbs_balanced_final.rds"))
-}
+  #saveRDS(fbs_balanced_bis,paste0(basedir,"/SUA-FBS Balancing/FBS_Balanced/Data/fbs_balanced_final.rds"))
+#}
 
 
 }
