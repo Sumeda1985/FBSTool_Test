@@ -10,16 +10,17 @@ fbs_balanced_plugin(input,output,session)
 Sys.sleep(6)
 remove_modal_spinner()
 t=as.numeric(as.numeric(input$fromyear) : as.numeric(input$endyear))
-files_fbs_balanced=list.files(path = "SUA-FBS Balancing/FBS_Balanced/Data",pattern ="^fbs_balanced_final.rds")
-if (paste0("fbs_balanced_final.rds") %in% files_fbs_balanced){
-     data=fread_rds("SUA-FBS Balancing/FBS_Balanced/Data/fbs_balanced_final.rds")
+#files_fbs_balanced=list.files(path = "SUA-FBS Balancing/FBS_Balanced/Data",pattern ="^fbs_balanced_final.rds")
+#if (paste0("fbs_balanced_final.rds") %in% files_fbs_balanced){
+     #data=fread_rds("SUA-FBS Balancing/FBS_Balanced/Data/fbs_balanced_final.rds")
+     data <- value$fbs_balanced_plugin
      data <- data[timePointYears %in% t]
      data[, geographicAreaM49 := NULL]
      setnames(data,c("measuredElementSuaFbs", "measuredItemFbsSua", "timePointYears","Value", "flagObservationStatus"),
               c("ElementCode","CPCCode","Year","Value","Flag"))
      data[, c("ElementCode", "Year") := lapply(.SD, as.character), .SDcols = c("ElementCode", "Year")]
      data=merge(data,all_elements, by="ElementCode", all.x = TRUE)
-     commodityName <- fread_rds("Data/SUA_Commodities.rds")
+     commodityName <- data.table(dbReadTable(concore, name="SUA_Commodities"))
      data <-merge(data,commodityName,by = "CPCCode",all.x = TRUE)
      data <- data[!is.na(Commodity)]
      elemKeys=c("5510", "5610", "5071", "5023", "5910", "5016", "5165", "5520","5525","5141","5166")
@@ -38,23 +39,26 @@ if (paste0("fbs_balanced_final.rds") %in% files_fbs_balanced){
                        
       )
       updateTabItems(session, "fao", newtab)
-    }else {
-      sendSweetAlert(
-        session = session,
-        title = paste("Please Run the Balancing Plugin to create FBS Balanced of", t),
+   # }else {
+      #sendSweetAlert(
+       # session = session,
+       # title = paste("Please Run the Balancing Plugin to create FBS Balanced of", t),
         # text = paste(elementNameMissing, collapse = ' , '),
-        type = "warning"
-      )
-  }
+       # type = "warning"
+      #)
+  #}
  })
+  
 observeEvent(input$total_DES,{
 t= as.numeric(input$endyear)
-files_fbs_balanced=list.files(path = "SUA-FBS Balancing/FBS_Balanced/Data",pattern ="^fbs_balanced_final.rds")
- if (paste0("fbs_balanced_final.rds") %in% files_fbs_balanced){
-      data=fread_rds("SUA-FBS Balancing/FBS_Balanced/Data/fbs_balanced_final.rds")
+#files_fbs_balanced=list.files(path = "SUA-FBS Balancing/FBS_Balanced/Data",pattern ="^fbs_balanced_final.rds")
+ #if (paste0("fbs_balanced_final.rds") %in% files_fbs_balanced){
+      #data=fread_rds("SUA-FBS Balancing/FBS_Balanced/Data/fbs_balanced_final.rds")
+      data <- value$fbs_balanced_plugin
       #####fishery calories must be binned here      ##new
-      fish <- fread_rds("Data/fish.rds")
-      setnames(fish,c("Item Code (CPC)","Element Code","Year","Flag"),c("measuredItemFbsSua", "measuredElementSuaFbs","timePointYears", "flagObservationStatus"))
+      fish <- data.table(dbReadTable(con, name="fish"))[,StatusFlag := 1]
+      fish[,c("StatusFlag","LastModified") := NULL]
+      setnames(fish,c("Item.Code..CPC.","Element.Code","Year","Flag"),c("measuredItemFbsSua", "measuredElementSuaFbs","timePointYears", "flagObservationStatus"))
       fish[,geographicAreaM49 := unique(data$geographicAreaM49)]  
       data <- rbind(data,fish)
       #########################################################   ## new 
@@ -74,7 +78,7 @@ files_fbs_balanced=list.files(path = "SUA-FBS Balancing/FBS_Balanced/Data",patte
       data <- data[!ElementCode %in% c("4031","4030","4008","4023", "4014", "4001", "665")]
       ########################################
       data=merge(data,all_elements, by="ElementCode", all.x = TRUE)
-      commodityName <- fread_rds("Data/SUA_Commodities.rds")
+      commodityName <- data.table(dbReadTable(concore, "SUA_Commodities"))
       data <-merge(data,commodityName,by = "CPCCode",all.x = TRUE)
       # elemKeys=c("5510", "5610", "5071", "5023", "5910", "5016", "5165", "5520","5525","5164","5141")
       #tourist remove
@@ -115,7 +119,7 @@ files_fbs_balanced=list.files(path = "SUA-FBS Balancing/FBS_Balanced/Data",patte
       data[,`FBS Code` := sub('.', '', `FBS Code`)]
       data =  dcast.data.table(data, `FBS Code`+`FBS Group`+ElementCode+Element ~ Year, value.var = c("Value"))
       # data <- data[ElementCode %in% "664"]
-      fbsTree= fread_rds("SUA-FBS Balancing/Data/fbsTree.rds")
+      fbsTree= data.table(dbReadTable(concore, "fbs_tree"))
       ##new
       #spliiting the rows  ## this is including fish 
       rbind1= data[`FBS Code`== "2901"]
@@ -153,21 +157,21 @@ files_fbs_balanced=list.files(path = "SUA-FBS Balancing/FBS_Balanced/Data",patte
       DESCPC_final=rbind(rbind1,rbind_ex_fish,rbind_fish,rbind2,DT_vegetables,rbind3, DT_animalproducts)
       DESCPC_final[, hidden := ifelse(`FBS Code` != shift(`FBS Code`, type = "lead"), 1, 0)] 
       value$data_des <- DESCPC_final
-     }else {
-      sendSweetAlert(
-        session = session,
-        title = paste("Please Run the Balancing Plugin to create Total Calories of", t),
+     #}else {
+     # sendSweetAlert(
+      #  session = session,
+       # title = paste("Please Run the Balancing Plugin to create Total Calories of", t),
         # text = paste(elementNameMissing, collapse = ' , '),
-        type = "warning"
-      )
-    }
+       # type = "warning"
+      #)
+   # }
 })
 output$download_fbs_balanced<- downloadHandler(
    filename = function() {
       "FBS_Balanced_by_year.xlsx"
     },
     content = function(filename) {
-      data_full <- fread_rds("SUA-FBS Balancing/FBS_Balanced/Data/fbs_balanced_final.rds")
+      data_full <- value$fbs_balanced_plugin
       replacements = data.frame(
         ele1  = unique(nutrientEle$ElementCode), 
         ele2 = as.character(unique(nutrientEle$measuredElement))
@@ -186,13 +190,13 @@ output$download_fbs_balanced<- downloadHandler(
       for(year in as.numeric(as.numeric(input$fromyear) : as.numeric(input$endyear))) {
         data_sheet = Prepare_data_fbs_report(
           year = year,
-          fbs_tree = fread_rds("SUA-FBS Balancing/Data/fbsTree.rds"),
+          fbs_tree = data.table(dbReadTable(concore, "fbs_tree")),
           fbs_balanced = value$data_fbs_balanced,
-          fbs_balanced_final = fread_rds("SUA-FBS Balancing/FBS_Balanced/Data/fbs_balanced_final.rds"),
-          commodity_names = fread_rds("Data/SUA_Commodities.rds"),
+          fbs_balanced_final = value$fbs_balanced_plugin,
+          commodity_names = data.table(dbReadTable(concore, "SUA_Commodities")),
           nutrient_data = nutrient_data,
-          population_data = fread_rds("SUA-FBS Balancing/Data/popSWS.rds"),
-          elements = fread_rds('data/elements.rds'),
+          population_data = data.table(dbReadTable(con, "pop_sws"))[StatusFlag== 1][,c("StatusFlag","LastModified") := NULL],
+          elements = data.table(dbReadTable(concore, "elements")),
           country = value_database$data$Country[1]
         )
        Add_FBS_year_sheet_formatted2(wb, as.character(year), data_sheet)
@@ -229,7 +233,7 @@ des_table_data <- reactive({
     if(filter_year == "") {
       return(NULL)
     }
-    elements <- fread_rds('data/elements.rds')
+    elements <- data.table(dbReadTable(concore, "elements"))
     return(
       data %>%
         left_join(elements %>% 
