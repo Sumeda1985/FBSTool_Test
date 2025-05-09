@@ -1,8 +1,8 @@
 #' Save Data to Database
-#' 
+#'
 #' This function saves data to the database, handling updates, deletions, and insertions.
 #' It manages both old and new data versions with proper status flags and timestamps.
-#' 
+#'
 #' @param data The data to save
 #' @param year_range The range of years to process
 #' @param session The Shiny session object
@@ -29,7 +29,7 @@ save_to_database <- function(data,table,longData, year_range, session, input, ou
     by = c("CPCCode", "ElementCode", "Year"),
     all = TRUE
   )
-  
+
   # Prepare old data for records that have changed
   old_data <- new_data[Value.y != Value.x | Flag.y != Flag.x|is.na(Value.y != Value.x)|is.na(Flag.y != Flag.x) ,
                        .(CountryM49 = as.character(
@@ -44,7 +44,7 @@ save_to_database <- function(data,table,longData, year_range, session, input, ou
                          LastModified,
                          Value = Value.x,
                          Flag = Flag.x)]
-  
+
 # Prepare new data for records that have changed
   new_data <- new_data[Value.y != Value.x | Flag.y != Flag.x |is.na(Value.y != Value.x)|is.na(Flag.y != Flag.x),
                        .(CountryM49 = as.character(
@@ -59,20 +59,20 @@ save_to_database <- function(data,table,longData, year_range, session, input, ou
                          LastModified = as.numeric(Sys.time()),
                          Value = Value.y,
                          Flag = Flag.y)]
-  
+
   # Merge with CPC and element codes
   old_data <- merge(old_data, all_cpc, by = "CPCCode", all.x = TRUE)
   new_data <- merge(new_data, all_cpc, by = "CPCCode", all.x = TRUE)
   old_data <- merge(old_data, all_elements, by = "ElementCode", all.x = TRUE)
   new_data <- merge(new_data, all_elements, by = "ElementCode", all.x = TRUE)
-  
+
   # Update existing records
   rows_update(
     table,
     as_tibble(new_data),
     by = c("CountryM49",
            "CPCCode",
-           "ElementCode", 
+           "ElementCode",
            "Year"),
     in_place = TRUE,
     copy = TRUE,
@@ -97,7 +97,7 @@ save_to_database <- function(data,table,longData, year_range, session, input, ou
     value$dropdata <- NULL
   }
 # Handle insertions
-  if (!is.null(nrow(value$insertdata))) {
+ if (!is.null(nrow(value$insertdata))) {
  insertData <- long_format(
       data_session[CPCCode %in% unique(value$insertdata$CPCCode) &
                      ElementCode %in% (value$insertdata$ElementCode)]
@@ -112,25 +112,25 @@ save_to_database <- function(data,table,longData, year_range, session, input, ou
       StatusFlag = 1,
       LastModified = as.numeric(Sys.time())
     )]
-    # Insert new records
-    rows_insert(
-      table,
-      as_tibble(insertData),
-      by = c("CountryM49",
-             "CPCCode",
-             "ElementCode",
-             "Year"
-        ),
-      in_place = TRUE,
-      copy = TRUE,
-      conflict = "ignore"
-    )
-    
+ ## Insert new records
+ startno <- as.integer(max(pull(table, id_key))+1)
+ endno <- startno+nrow(insertData)-1
+ insertData[,id_key := c(startno:endno)]
+ rows_insert(
+     table,
+     as_tibble(insertData),
+     by = "id_key",
+     in_place = TRUE,
+     copy = TRUE,
+     conflict = "ignore"
+ )
+
+
     #value_database$data <- value$insertdata
-    
+
     updateSUA <- updateSUA(input,output,session)
   } else {
     value$insertdata <- NULL
   }
-  
+
 }
